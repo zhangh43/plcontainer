@@ -680,11 +680,11 @@ ResGroupPLCleanup(void *arg)
 
 	resgroup_cleanup_hook_data *cleanupData = (resgroup_cleanup_hook_data *)arg;
 	groupId = cleanupData->groupid;
-	strncpy(dockerid, cleanupData->dockerid, sizeof(dockerid));
-	pfree(arg);
 
 	if(!ContainerMemoryUsageIsHigh(groupId))
 		return false;
+
+	strncpy(dockerid, cleanupData->dockerid, sizeof(dockerid));
 
 	while ((res = plc_backend_delete(dockerid)) < 0 && _loop_cnt++ < 3)
 		pg_usleep(2000 * 1000L);
@@ -693,6 +693,7 @@ ResGroupPLCleanup(void *arg)
 		plc_elog(NOTICE, "Container delete error at transation end: %s", api_error_message);
 		return false;
 	}
+	pfree(arg);
 
 	return true;
 }

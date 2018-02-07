@@ -440,30 +440,41 @@ ResGroupPLDec(void *arg)
 {
 	Oid groupId;
 	int32 memory_usage;
-	int32 memory_expected;
-	int32 memory_limit, memory_limit_new;
+	int32 memory_limit;
+	int32 memory_gap;
+	int32 pl_freeable_memory;
+	int32 pl_decreased_memory;
+	int fd;
 
 	Assert(LWLockHeldExclusiveByMe(ResGroupLock));
 
 	groupId = *(Oid *)arg;
 
+	memory_gap = ResGroup_GetMemoryGap(groupId);
+	
+	if (memory_gap <= 0) 
+		return true;
+
+	/* Lock the cgroup node to decreate the memory limit in an exclusive way
+	 * Since other segment may change the memory limit at the same time.
+	 * */
+	fd = ResGroupOps_LockGroup(groupId, "memory", true);
 	memory_limit = ResGroupOps_GetMemoryLimit(groupId);
 	memory_usage = ResGroupOps_GetMemoryUsage(groupId);
-	memory_expected = ResGroup_GetMemoryExpected(groupId);
-
-	/* no intention to decrease memory limit */
-	if (memory_limit <= memory_expected)
+	pl_freeable_memory = memory_limit*0.8 - memory_usage;
+	
+	if (pl_freeable_memory <= 0)
+	{
+		ResGroupOps_UnLockGroup(groupId, fd);
 		return true;
+	}
+	pl_decreased_memory = Min(pl_freeable_memory, memory_gap);
+	ResGroupOps_SetMemoryLimitByValue(groupId, memory_limit - pl_decreased_memory);
+	ResGroupOps_UnLockGroup(groupId, fd);
 
-	/* no room to decrease memory limit */
-	if (memory_limit <= memory_usage)
-		return true;
-
-	memory_limit_new = Max(memory_usage, memory_expected);
-
-	ResGroupOps_SetMemoryLimitByValue(groupId, memory_limit_new);
-	ResGroup_ReclaimMemoryFromExternal(groupId, memory_limit - memory_limit_new);
-
+	ResGroup_ReclaimMemoryFromExternal(groupId, pl_decreased_memory);
+	ResGroup_SetMemoryGap(groupId, memory_gap - pl_decreased_memory);
+	
 	return true;
 }
 
@@ -471,26 +482,31 @@ static bool
 ResGroupPLInc(void *arg)
 {
 	Oid groupId;
-	int32 memory_expected;
 	int32 memory_limit;
-	int32 memory_inc;
+	int32 pl_increased_memory;
+	int32 memory_gap;
 
 	Assert(LWLockHeldExclusiveByMe(ResGroupLock));
 
 	groupId = *(Oid *)arg;
 
-	memory_limit = ResGroupOps_GetMemoryLimit(groupId);
-	memory_expected = ResGroup_GetMemoryExpected(groupId);
-
-	/* no intention to increase memory limit */
-	if (memory_limit >= memory_expected)
+	memory_gap = ResGroup_GetMemoryGap(groupId);
+	
+	if (memory_gap >= 0) 
 		return true;
 
-	memory_inc = ResGroup_AssignMemoryToExternal(groupId, memory_expected - memory_limit);
+	pl_increased_memory = ResGroup_AssignMemoryToExternal(groupId, memory_gap * -1);
 
-	if (memory_inc > 0)
+	if (pl_increased_memory > 0)
 	{
-		ResGroupOps_SetMemoryLimitByValue(groupId, memory_limit + memory_inc);
+		int fd;
+
+		fd = ResGroupOps_LockGroup(groupId, "memory", true);
+		memory_limit = ResGroupOps_GetMemoryLimit(groupId);
+		ResGroupOps_SetMemoryLimitByValue(groupId, memory_limit + pl_increased_memory);
+		ResGroupOps_UnLockGroup(groupId, fd);
+
+		ResGroup_SetMemoryGap(groupId, memory_gap + pl_increased_memory);
 	}
 
 	return true;
