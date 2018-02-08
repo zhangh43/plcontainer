@@ -49,10 +49,14 @@ static void plcontainer_process_sql(plcMsgSQL *msg, plcConn *conn, plcProcInfo *
 
 static void plcontainer_process_log(plcMsgLog *log);
 
+static bool ContainerMemoryUsageIsHigh(Oid groupId);
+static bool ResGroupPLCleanup(void *arg);
 static bool ResGroupPLDec(void *arg);
 static bool ResGroupPLInc(void *arg);
 static bool ResGroupPLCompare(void *arg1, void *arg2);
 static volatile bool DeleteBackendsWhenError;
+
+static int memory_redzone_to_clean_up = 20;
 
 /* this is saved and restored by plcontainer_call_handler */
 MemoryContext pl_container_caller_context = NULL;
@@ -248,6 +252,7 @@ static plcProcResult *plcontainer_get_result(FunctionCallInfo fcinfo,
 
 				RegisterResGroupMemoryHook(RES_GROUP_MEMORY_HOOK_DEC, ResGroupPLDec, (void *)hookArg, ResGroupPLCompare);
 				RegisterResGroupMemoryHook(RES_GROUP_MEMORY_HOOK_INC, ResGroupPLInc, (void *)hookArg, ResGroupPLCompare);
+				RegisterResGroupMemoryHook(RES_GROUP_MEMORY_HOOK_CLEAN, ResGroupPLCleanup, (void *)hookArg, ResGroupPLCompare);
 			}
 
 			res = plcontainer_channel_send(conn, (plcMessage *) req);
@@ -510,6 +515,36 @@ ResGroupPLInc(void *arg)
 	}
 
 	return true;
+}
+
+
+static bool
+ResGroupPLCleanup(void *arg)
+{
+	Oid groupId;
+	
+	groupId = *(Oid *)arg;
+	if(!ContainerMemoryUsageIsHigh(groupId))
+		return false;
+
+	delete_containers();
+
+	pfree(arg);
+
+	return true;
+}
+
+static bool ContainerMemoryUsageIsHigh(Oid groupId)
+{
+        int32 memory_usage;
+        int32 memory_expected;
+
+        Assert(LWLockHeldExclusiveByMe(ResGroupLock));
+
+        memory_usage = ResGroupOps_GetMemoryUsage(groupId);
+        memory_expected = ResGroup_GetMemoryExpected(groupId);
+
+        return memory_usage > memory_expected * memory_redzone_to_clean_up / 100;
 }
 
 static bool
