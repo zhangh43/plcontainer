@@ -25,4 +25,5 @@ plcontainer runtime-add -r plc_r_shared -i pivotaldata/plcontainer_r_shared:deve
 plcontainer runtime-add -r plc_python_network -i pivotaldata/plcontainer_python_shared:devel -l python -s use_container_logging=yes -s use_container_network=yes; \
 gpstop -arf; \
 psql -d postgres -f /usr/local/greenplum-db-devel/share/postgresql/plcontainer/plcontainer_install.sql; \
+sleep 3000
 \""
