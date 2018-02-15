@@ -51,7 +51,50 @@ make_cgroups_dir() {
 EOF
 }
 
+run_resgroup_test() {
+    local gpdb_master_alias=$1
+
+    ssh $gpdb_master_alias bash -ex <<EOF
+        source /usr/local/greenplum-db-devel/greenplum_path.sh
+        export PGPORT=5432
+        export MASTER_DATA_DIRECTORY=/data/gpdata/master/gpseg-1
+
+        cd /home/gpadmin/gpdb_src
+        ./configure --prefix=/usr/local/greenplum-db-devel \
+            --without-zlib --without-rt --without-libcurl \
+            --without-libedit-preferred --without-docdir --without-readline \
+            --disable-gpcloud --disable-gpfdist --disable-orca \
+            --disable-pxf ${CONFIGURE_FLAGS}
+
+        make -C /home/gpadmin/gpdb_src/src/test/regress
+        ssh sdw1 mkdir -p /home/gpadmin/gpdb_src/src/test/regress </dev/null
+        ssh sdw1 mkdir -p /home/gpadmin/gpdb_src/src/test/isolation2 </dev/null
+        scp /home/gpadmin/gpdb_src/src/test/regress/regress.so \
+            gpadmin@sdw1:/home/gpadmin/gpdb_src/src/test/regress/
+
+        make installcheck-resgroup || (
+            errcode=\$?
+            find src/test/isolation2 -name regression.diffs \
+            | while read diff; do
+                cat <<EOF1
+
+======================================================================
+DIFF FILE: \$diff
+----------------------------------------------------------------------
+
+EOF1
+                head -1000 \$diff
+              done
+            exit \$errcode
+        )
+EOF
+}
+
+
+
+
 mount_cgroups ccp-${CLUSTER_NAME}-0
 mount_cgroups ccp-${CLUSTER_NAME}-1
 make_cgroups_dir ccp-${CLUSTER_NAME}-0
 make_cgroups_dir ccp-${CLUSTER_NAME}-1
+run_resgroup_test mdw
