@@ -560,10 +560,10 @@ runtimeConfEntry *plc_get_runtime_configuration(char *runtime_id) {
 
 		while ((scanentry = (runtimeConfEntry *) hash_seq_search(&hash_status)) != NULL)
 		{
-			elog(LOG, "Runtime:%s with resgroup id:%u",scanentry->runtimeid, scanentry->resgroupOid);
+			plc_elog(LOG, "Runtime:%s with resgroup id:%u",scanentry->runtimeid, scanentry->resgroupOid);
 		}
 
-		elog(ERROR,"Cannot find runtime %s in configuration with %d runtimes.", runtime_id, hash_get_num_entries(rumtime_conf_table));
+		plc_elog(ERROR,"Cannot find runtime %s in configuration with %d runtimes.", runtime_id, hash_get_num_entries(rumtime_conf_table));
 	}
 	return entry;
 }
