@@ -211,7 +211,7 @@ static Datum plcontainer_call_hook(PG_FUNCTION_ARGS) {
 
 static plcProcResult *plcontainer_get_result(FunctionCallInfo fcinfo,
                                              plcProcInfo *pinfo) {
-	char *runtime_id;
+	char *runtime_id = NULL;
 	plcConn *conn;
 	int message_type;
 	plcMsgCallreq *req = NULL;
@@ -237,7 +237,6 @@ static plcProcResult *plcontainer_get_result(FunctionCallInfo fcinfo,
 				DeleteBackendsWhenError = false;
 			}
 		}
-		pfree(runtime_id);
 
 		DeleteBackendsWhenError = true;
 		if (conn != NULL) {
@@ -312,6 +311,8 @@ static plcProcResult *plcontainer_get_result(FunctionCallInfo fcinfo,
 			/* If conn == NULL, it should have longjump-ed earlier. */
 			plc_elog(ERROR, "Could not create or connect to container.");
 		}
+		pfree(runtime_id);
+		runtime_id = NULL;
 		/*
 		 * Since plpy will only let you close subtransactions that you
 		 * started, you cannot *unnest* subtransactions, only *nest* them
@@ -322,6 +323,9 @@ static plcProcResult *plcontainer_get_result(FunctionCallInfo fcinfo,
 	PG_CATCH();
 	{
 		plcontainer_abort_open_subtransactions(save_subxact_level);
+		if (runtime_id != NULL) {
+			pfree(runtime_id);
+		}
 		PG_RE_THROW();
 	}
 	PG_END_TRY();
