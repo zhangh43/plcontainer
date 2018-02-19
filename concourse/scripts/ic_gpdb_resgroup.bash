@@ -93,7 +93,5 @@ EOF
 
 
 
-mount_cgroups ccp-${CLUSTER_NAME}-0
-mount_cgroups ccp-${CLUSTER_NAME}-1
 make_cgroups_dir ccp-${CLUSTER_NAME}-0
 make_cgroups_dir ccp-${CLUSTER_NAME}-1
