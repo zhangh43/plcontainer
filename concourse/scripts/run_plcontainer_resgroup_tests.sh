@@ -55,10 +55,10 @@ plcontainer runtime-add -r plc_python_shared -i pivotaldata/plcontainer_python_s
 plcontainer runtime-add -r plc_r_shared -i pivotaldata/plcontainer_r_shared:devel -l r -s use_container_logging=yes -s resource_group_name=plgroup; \
 plcontainer runtime-add -r plc_python_network -i pivotaldata/plcontainer_python_shared:devel -l python -s use_container_logging=yes -s use_container_network=yes -s resource_group_name=plgroup; \
 
+export MASTER_DATA_DIRECTORY=/data/gpdata/master/gpseg-1
 gpconfig -c gp_resource_manager -v "group"
 gpstop -arf; \
 psql -d postgres -f /usr/local/greenplum-db-devel/share/postgresql/plcontainer/plcontainer_install.sql; \
-psql -d postgres -f 
 pushd plcontainer_src/tests; \
 timeout -s 9 60m make resgroup; \
 popd; \

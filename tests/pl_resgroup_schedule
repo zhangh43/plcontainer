@@ -6,9 +6,6 @@ test: schema
 # Test plcontainer utility.
 test: test_utility
 
-# configuration function tests
-test: test_configuration
-
 # test declaration combinations in function definitions.
 test: runtimeid_declaration
 
@@ -21,8 +18,6 @@ test: test_r_error test_python_error
 test: exception
 test: faultinject_python
 
-# test wrong configuration validation in pl/container C code
-test: test_wrong_config
 # PL/Container UDA test
 test: uda_python uda_r
 
