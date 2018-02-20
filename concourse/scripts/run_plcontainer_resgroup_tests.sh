@@ -59,5 +59,8 @@ gpconfig -c gp_resource_manager -v "group"
 gpstop -arf; \
 psql -d postgres -f /usr/local/greenplum-db-devel/share/postgresql/plcontainer/plcontainer_install.sql; \
 psql -d postgres -f 
+pushd plcontainer_src/tests; \
+timeout -s 9 60m make resgroup; \
+popd; \
 sleep 30000
 \""
