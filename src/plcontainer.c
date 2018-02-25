@@ -248,7 +248,7 @@ static plcProcResult *plcontainer_get_result(FunctionCallInfo fcinfo,
 				Oid 		*hookArg = NULL;
 				hookArg = (Oid *)MemoryContextAlloc(TopMemoryContext, sizeof(Oid));
 				*hookArg = runtime_conf_entry->resgroupOid;
-
+				plc_elog(LOG, "hookArg is %u with runtime_id=%s", *hookArg, runtime_id);
 				RegisterResGroupMemoryHook(RES_GROUP_MEMORY_HOOK_DEC, ResGroupPLDec, (void *)hookArg, ResGroupPLCompare);
 				RegisterResGroupMemoryHook(RES_GROUP_MEMORY_HOOK_INC, ResGroupPLInc, (void *)hookArg, ResGroupPLCompare);
 				RegisterResGroupMemoryHook(RES_GROUP_MEMORY_HOOK_CLEAN, ResGroupPLCleanup, (void *)hookArg, ResGroupPLCompare);
