@@ -8,7 +8,7 @@ PGXS := $(shell pg_config --pgxs)
 include $(PGXS)
 
 REGRESS_OPTS = --dbname=$(PL_TESTDB) --init-file=./init_file --schedule=pl_schedule
-
+RESGROUP_OPTS = --dbname=$(PL_TESTDB) --init-file=./init_file --schedule=pl_resgroup_schedule
 PSQLDIR = $(bindir)
 
 .PHONY: default
@@ -17,7 +17,17 @@ default: all
 .PHONY: all
 all: tests
 
-
+.PHONY: resgroup
+resgroup:
+	@echo "Tests require three runtime configurations. Will check the three"
+	@echo "runtime configurations soon. If there is configuration missing,"
+	@echo "please refer plcontainer script concourse/scripts/run_plcontainer_tests.sh"
+	@echo "as example to learn how to set up those configurations"
+	plcontainer runtime-show -r plc_python_shared
+	plcontainer runtime-show -r plc_r_shared
+	plcontainer runtime-show -r plc_python_network
+	PL_TESTDB=$(PL_TESTDB) $(top_builddir)/src/test/regress/pg_regress \
+				--psqldir=$(PSQLDIR) $(RESGROUP_OPTS) || if [[ -f regression.diffs ]]; then cat regression.diffs; exit 1; fi
 .PHONY: tests
 tests:
 	@echo "Tests require three runtime configurations. Will check the three"
