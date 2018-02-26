@@ -243,6 +243,7 @@ static plcProcResult *plcontainer_get_result(FunctionCallInfo fcinfo,
 			int res;
 
 			/* register hook to increase/decrease memory limit in cgroup node*/
+			/* call this every query*/
 			runtimeConfEntry *runtime_conf_entry = plc_get_runtime_configuration(runtime_id);
 			if(runtime_conf_entry->resgroupOid != InvalidOid) {
 				Oid 		*hookArg = NULL;
@@ -250,7 +251,15 @@ static plcProcResult *plcontainer_get_result(FunctionCallInfo fcinfo,
 				*hookArg = runtime_conf_entry->resgroupOid;
 				plc_elog(LOG, "hookArg is %u with runtime_id=%s", *hookArg, runtime_id);
 				RegisterResGroupMemoryHook(RES_GROUP_MEMORY_HOOK_DEC, ResGroupPLDec, (void *)hookArg, ResGroupPLCompare);
+				
+				hookArg = (Oid *)MemoryContextAlloc(TopMemoryContext, sizeof(Oid));
+				*hookArg = runtime_conf_entry->resgroupOid;
+				plc_elog(LOG, "hookArg is %u with runtime_id=%s", *hookArg, runtime_id);
 				RegisterResGroupMemoryHook(RES_GROUP_MEMORY_HOOK_INC, ResGroupPLInc, (void *)hookArg, ResGroupPLCompare);
+				
+				hookArg = (Oid *)MemoryContextAlloc(TopMemoryContext, sizeof(Oid));
+				*hookArg = runtime_conf_entry->resgroupOid;
+				plc_elog(LOG, "hookArg is %u with runtime_id=%s", *hookArg, runtime_id);
 				RegisterResGroupMemoryHook(RES_GROUP_MEMORY_HOOK_CLEAN, ResGroupPLCleanup, (void *)hookArg, ResGroupPLCompare);
 			}
 
@@ -458,6 +467,7 @@ ResGroupPLDec(void *arg)
 	Assert(LWLockHeldExclusiveByMe(ResGroupLock));
 
 	groupId = *(Oid *)arg;
+	pfree(arg);
 
 	memory_gap = ResGroup_GetMemoryGap(groupId);
 	
@@ -498,6 +508,7 @@ ResGroupPLInc(void *arg)
 	Assert(LWLockHeldExclusiveByMe(ResGroupLock));
 
 	groupId = *(Oid *)arg;
+	pfree(arg);
 
 	memory_gap = ResGroup_GetMemoryGap(groupId);
 	
