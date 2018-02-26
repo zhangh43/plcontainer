@@ -1,6 +1,5 @@
 # setup
 test: resgroup_setup
-test: install
 test: schema
 
 # Test plcontainer utility.
