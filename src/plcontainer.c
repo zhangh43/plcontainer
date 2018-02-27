@@ -11,6 +11,7 @@
 #include "storage/ipc.h"
 #include "funcapi.h"
 #include "miscadmin.h"
+#include "storage/proc.h"
 #include "utils/faultinjector.h"
 #include "utils/memutils.h"
 #include "utils/guc.h"
@@ -54,9 +55,11 @@ static bool ResGroupPLCleanup(void *arg);
 static bool ResGroupPLDec(void *arg);
 static bool ResGroupPLInc(void *arg);
 static bool ResGroupPLCompare(void *arg1, void *arg2);
+static void RegisterHook(char *runtime_id);
 static volatile bool DeleteBackendsWhenError;
 
 static int memory_redzone_to_clean_up = 20;
+static int current_query_id = 0;
 
 /* this is saved and restored by plcontainer_call_handler */
 MemoryContext pl_container_caller_context = NULL;
@@ -242,27 +245,7 @@ static plcProcResult *plcontainer_get_result(FunctionCallInfo fcinfo,
 		if (conn != NULL) {
 			int res;
 
-			/* register hook to increase/decrease memory limit in cgroup node*/
-			/* call this every query*/
-			runtimeConfEntry *runtime_conf_entry = plc_get_runtime_configuration(runtime_id);
-			if(runtime_conf_entry->resgroupOid != InvalidOid) {
-				Oid 		*hookArg = NULL;
-				hookArg = (Oid *)MemoryContextAlloc(TopMemoryContext, sizeof(Oid));
-				*hookArg = runtime_conf_entry->resgroupOid;
-				plc_elog(LOG, "hookArg is %u with runtime_id=%s", *hookArg, runtime_id);
-				RegisterResGroupMemoryHook(RES_GROUP_MEMORY_HOOK_DEC, ResGroupPLDec, (void *)hookArg, ResGroupPLCompare);
-				
-				hookArg = (Oid *)MemoryContextAlloc(TopMemoryContext, sizeof(Oid));
-				*hookArg = runtime_conf_entry->resgroupOid;
-				plc_elog(LOG, "hookArg is %u with runtime_id=%s", *hookArg, runtime_id);
-				RegisterResGroupMemoryHook(RES_GROUP_MEMORY_HOOK_INC, ResGroupPLInc, (void *)hookArg, ResGroupPLCompare);
-				
-				hookArg = (Oid *)MemoryContextAlloc(TopMemoryContext, sizeof(Oid));
-				*hookArg = runtime_conf_entry->resgroupOid;
-				plc_elog(LOG, "hookArg is %u with runtime_id=%s", *hookArg, runtime_id);
-				RegisterResGroupMemoryHook(RES_GROUP_MEMORY_HOOK_CLEAN, ResGroupPLCleanup, (void *)hookArg, ResGroupPLCompare);
-			}
-
+			RegisterHook(runtime_id);
 			res = plcontainer_channel_send(conn, (plcMessage *) req);
 			SIMPLE_FAULT_NAME_INJECTOR("plcontainer_after_send_request");
 
@@ -568,4 +551,34 @@ ResGroupPLCompare(void *arg1, void *arg2)
 	Oid groupid1 = *(Oid *)arg1;
 	Oid groupid2 = *(Oid *)arg2;
 	return groupid1 == groupid2;
+}
+
+static void
+RegisterHook(char *runtime_id)
+{
+
+	/* register hook to increase/decrease memory limit in cgroup node*/
+	/* call this every query*/
+	if (current_query_id != MyProc->queryCommandId){
+		current_query_id = MyProc->queryCommandId;
+		runtimeConfEntry *runtime_conf_entry = plc_get_runtime_configuration(runtime_id);
+		if(runtime_conf_entry->resgroupOid != InvalidOid) {
+			Oid 		*hookArg = NULL;
+			hookArg = (Oid *)MemoryContextAlloc(TopMemoryContext, sizeof(Oid));
+			*hookArg = runtime_conf_entry->resgroupOid;
+			plc_elog(LOG, "hookArg is %u with runtime_id=%s", *hookArg, runtime_id);
+			RegisterResGroupMemoryHook(RES_GROUP_MEMORY_HOOK_DEC, ResGroupPLDec, (void *)hookArg, ResGroupPLCompare);
+
+			hookArg = (Oid *)MemoryContextAlloc(TopMemoryContext, sizeof(Oid));
+			*hookArg = runtime_conf_entry->resgroupOid;
+			plc_elog(LOG, "hookArg is %u with runtime_id=%s", *hookArg, runtime_id);
+			RegisterResGroupMemoryHook(RES_GROUP_MEMORY_HOOK_INC, ResGroupPLInc, (void *)hookArg, ResGroupPLCompare);
+
+			hookArg = (Oid *)MemoryContextAlloc(TopMemoryContext, sizeof(Oid));
+			*hookArg = runtime_conf_entry->resgroupOid;
+			plc_elog(LOG, "hookArg is %u with runtime_id=%s", *hookArg, runtime_id);
+			RegisterResGroupMemoryHook(RES_GROUP_MEMORY_HOOK_CLEAN, ResGroupPLCleanup, (void *)hookArg, ResGroupPLCompare);
+		}
+	}
+
 }
