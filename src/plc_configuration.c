@@ -236,7 +236,6 @@ static void parse_runtime_configuration(xmlNode *node) {
 					}
 					value = xmlGetProp(cur_node, (const xmlChar *) "resource_group_name");
 					if (value != NULL) {
-						ResGroupCaps		caps;
 						validSetting = true;
 						/*check gp_resgroup to find the oid of resgroup*/
 						if (strlen((char *) value) == 0) {
@@ -246,14 +245,6 @@ static void parse_runtime_configuration(xmlNode *node) {
 						if (resgroupOid == InvalidOid) {
 							plc_elog(ERROR, "SETTING element <resource_group_name> must be a resource group in greenplum. "
 									"Current setting is: %s", (char *) value);
-						}
-						Relation pg_resgroupcapability_rel = heap_open(ResGroupCapabilityRelationId,
-								AccessShareLock);
-						GetResGroupCapabilities(pg_resgroupcapability_rel, resgroupOid, &caps);
-						heap_close(pg_resgroupcapability_rel, AccessShareLock);
-						if (caps.concurrency != 0) {
-							plc_elog(ERROR, "SETTING element <resource_group_name> must be a resource group with concurrency zero,"
-									" Current concurrency is %d", caps.concurrency);
 						}
 						conf_entry->resgroupOid = resgroupOid;
 						xmlFree((void *) value);
