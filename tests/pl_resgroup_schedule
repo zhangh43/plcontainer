@@ -1,5 +1,6 @@
 # setup
 test: resgroup_setup
+test: install
 test: schema
 
 # Test plcontainer utility.
@@ -25,5 +26,5 @@ test: misc
 
 # PL/Container parallel test (io & cpu)
 test: parallel_prepare
-test: parallel_1 parallel_2 parallel_3 parallel_4 parallel_5 parallel_6 parallel_7 parallel_8
+test: parallel_1 parallel_2 parallel_3
 
