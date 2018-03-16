@@ -22,6 +22,20 @@ typedef struct PLySubtransactionObject {
 } PLySubtransactionObject;
 
 
+#if PY_MAJOR_VERSION >= 3
+#define PyString_Check(x) 0
+#define PyString_AsString(x) PLyUnicode_AsString(x)
+#define PyString_FromString(x) PLyUnicode_FromString(x)
+#endif
+
+/*
+ * Python 3 only has long.
+ */
+#if PY_MAJOR_VERSION >= 3
+#define PyInt_FromLong(x) PyLong_FromLong(x)
+#define PyInt_AsLong(x) PyLong_AsLong(x)
+#endif
+
 extern PyObject *PLy_debug(PyObject *self, PyObject *args);
 
 extern PyObject *PLy_log(PyObject *self, PyObject *args);
@@ -274,6 +288,14 @@ PyTypeObject PLy_PlanType = {
 	0,
 	0,
 };
+
+
+static PyObject *PLyUnicode_Bytes(PyObject *unicode);
+static char *PLyUnicode_AsString(PyObject *unicode);
+
+#if PY_MAJOR_VERSION >= 3
+static PyObject *PLyUnicode_FromString(const char *s);
+#endif
 
 /* plan object methods */
 static PyObject *
@@ -1055,3 +1077,82 @@ PLy_init_plpy(PyObject *PyMainModule)
 	/* Add plpy module to it */
 	PyModule_AddObject(PyMainModule, "plpy", plpymod);
 }
+
+
+
+
+/*
+ * Convert a Python unicode object to a Python string/bytes object in
+ * PostgreSQL server encoding.	Reference ownership is passed to the
+ * caller.
+ */
+static PyObject *
+PLyUnicode_Bytes(PyObject *unicode)
+{
+	PyObject   *rv;
+	const char *serverenc;
+
+	/*
+	 * Python understands almost all PostgreSQL encoding names, but it doesn't
+	 * know SQL_ASCII.
+	 */
+	if (GetDatabaseEncoding() == PG_SQL_ASCII)
+		serverenc = "ascii";
+	else
+		serverenc = GetDatabaseEncodingName();
+	rv = PyUnicode_AsEncodedString(unicode, serverenc, "strict");
+	if (rv == NULL)
+		PLy_elog(ERROR, "could not convert Python Unicode object to PostgreSQL server encoding");
+	return rv;
+}
+
+/*
+ * Convert a Python unicode object to a C string in PostgreSQL server
+ * encoding.  No Python object reference is passed out of this
+ * function.  The result is palloc'ed.
+ *
+ * Note that this function is disguised as PyString_AsString() when
+ * using Python 3.	That function retuns a pointer into the internal
+ * memory of the argument, which isn't exactly the interface of this
+ * function.  But in either case you get a rather short-lived
+ * reference that you ought to better leave alone.
+ */
+static char *
+PLyUnicode_AsString(PyObject *unicode)
+{
+	PyObject   *o = PLyUnicode_Bytes(unicode);
+	char	   *rv = pstrdup(PyBytes_AsString(o));
+
+	Py_XDECREF(o);
+	return rv;
+}
+
+
+
+#if PY_MAJOR_VERSION >= 3
+/*
+ * Convert a C string in the PostgreSQL server encoding to a Python
+ * unicode object.	Reference ownership is passed to the caller.
+ */
+static PyObject *
+PLyUnicode_FromString(const char *s)
+{
+	char	   *utf8string;
+	PyObject   *o;
+
+	utf8string = (char *) pg_do_encoding_conversion((unsigned char *) s,
+													strlen(s),
+													GetDatabaseEncoding(),
+													PG_UTF8);
+
+	o = PyUnicode_FromString(utf8string);
+
+	if (utf8string != s)
+		pfree(utf8string);
+
+	return o;
+}
+#endif   /* PY_MAJOR_VERSION >= 3 */
+
+
+
