@@ -14,9 +14,6 @@
 
 #include <Python.h>
 
-#if PY_MAJOR_VERSION >= 3
-extern char *PLyUnicode_AsString(PyObject *unicode);
-#endif
 
 static PyObject *PLy_output(volatile int, PyObject *, PyObject *);
 

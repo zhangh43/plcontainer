@@ -22,8 +22,8 @@
 
 #if PY_MAJOR_VERSION >= 3
 #define PyString_Check(x) 0
-#define PyString_AsString(x) PLyUnicode_AsString(x)
-#define PyString_FromString(x) PLyUnicode_FromString(x)
+//#define PyString_AsString(x) PLyUnicode_AsString(x)
+//#define PyString_FromString(x) PLyUnicode_FromString(x)
 #endif
 
 /*

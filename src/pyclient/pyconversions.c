@@ -14,9 +14,6 @@
 
 #include <Python.h>
 
-#if PY_MAJOR_VERSION >= 3
-extern PyObject *PLyUnicode_FromString(const char *s);
-#endif
 
 static PyObject *plc_pyobject_from_int1(char *input, plcPyType *type);
 
