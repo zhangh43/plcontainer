@@ -36,7 +36,6 @@ static PyObject *PyMainModule = NULL;
 extern void PLy_init_plpy(PyObject *PyMainModule);
 
 int python_init() {
-	PyObject *plpymod = NULL;
 	PyObject *dict = NULL;
 	PyObject *gd = NULL;
 
@@ -54,7 +53,7 @@ int python_init() {
 	/* Initialize the main module */
 	PyMainModule = PyImport_ImportModule("__main__");
 
-	PLy_init_plpy();
+	PLy_init_plpy(PyMainModule);
 
 	/* Get module dictionary of objects */
 	dict = PyModule_GetDict(PyMainModule);
