@@ -19,6 +19,7 @@
 
 #if PY_MAJOR_VERSION >= 3
 extern PyObject *PLyUnicode_FromString(const char *s);
+extern char *PLyUnicode_AsString(PyObject *unicode);
 #endif
 
 static char *get_python_error();
