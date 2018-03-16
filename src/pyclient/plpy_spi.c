@@ -73,7 +73,7 @@ static PyModuleDef PLy_exc_module = {
 PLyInit_plpy(void);
 #endif
 
-static PyMethodDef moddef[] = {
+static PyMethodDef PLy_methods[] = {
 	/*
 	 * logging methods
 	 */
@@ -1031,7 +1031,7 @@ PLy_init_plpy(PyObject *PyMainModule)
 	plpymod = PyModule_Create(&plc_plpy_module);
 	PyImport_AppendInittab("plpy", PyInit_plpy);
 #else
-	plpymod = Py_InitModule("plpy", moddef);
+	plpymod = Py_InitModule("plpy", PLy_methods);
 	Ply_spi_exception_init(plpymod);
 #endif
 	/* Add plpy module to it */
