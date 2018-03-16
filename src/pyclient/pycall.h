@@ -16,16 +16,6 @@
 			mbstowcs(progname, x, strlen(x) + 1);   \
 			Py_SetProgramName(progname);            \
 		} while (0);
-
-// Int data type no longer exists
-#define PyInt_Check(x)    0
-#define PyInt_AsLong(x)   PyLong_AsLong(x)
-#define PyInt_FromLong(x) PyLong_FromLong(x)
-
-// Strings are now unicode
-#define PyString_FromString(x) PyUnicode_FromString(x)
-#define PyString_AsString(x)   PyUnicode_AsUTF8(x)
-#define PyString_Check(x)      (PyUnicode_Check(x) || PyBytes_Check(x))
 #else
 #define plc_Py_SetProgramName(x) Py_SetProgramName(x)
 #endif
