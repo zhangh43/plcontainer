@@ -35,21 +35,6 @@ static PyObject *PyMainModule = NULL;
 
 extern void PLy_init_plpy(PyObject *PyMainModule);
 
-
-#if PY_MAJOR_VERSION >= 3
-static PyModuleDef plc_plpy_module = {
-	PyModuleDef_HEAD_INIT,     /* m_base */
-	"plpy",                    /* m_name */
-	NULL,                      /* m_doc */
-	-1,                        /* m_size */
-	moddef,                    /* m_methods */
-	NULL,                      /* m_reload */
-	NULL,                      /* m_traverse */
-	NULL,                      /* m_clear */
-	NULL                       /* m_free */
-};
-#endif
-
 int python_init() {
 	PyObject *plpymod = NULL;
 	PyObject *dict = NULL;
