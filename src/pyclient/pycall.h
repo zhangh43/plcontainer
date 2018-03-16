@@ -22,6 +22,15 @@
 
 #if PY_MAJOR_VERSION >= 3
 #define PyString_Check(x) 0
+#define PyInt_Check(x)    0
+#define PyInt_AsLong(x)   PyLong_AsLong(x)
+#define PyInt_FromLong(x) PyLong_FromLong(x)
+
+// Strings are now unicode
+#define PyString_FromString(x) PyUnicode_FromString(x)
+#define PyString_AsString(x)   PyUnicode_AsUTF8(x)
+//#define PyString_Check(x)      (PyUnicode_Check(x) || PyBytes_Check(x))
+
 //#define PyString_AsString(x) PLyUnicode_AsString(x)
 //#define PyString_FromString(x) PLyUnicode_FromString(x)
 #endif
@@ -30,8 +39,8 @@
  * Python 3 only has long.
  */
 #if PY_MAJOR_VERSION >= 3
-#define PyInt_FromLong(x) PyLong_FromLong(x)
-#define PyInt_AsLong(x) PyLong_AsLong(x)
+//#define PyInt_FromLong(x) PyLong_FromLong(x)
+//#define PyInt_AsLong(x) PyLong_AsLong(x)
 #endif
 
 #include "common/comm_connectivity.h"
