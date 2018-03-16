@@ -17,6 +17,10 @@
 
 #include <Python.h>
 
+#if PY_MAJOR_VERSION >= 3
+extern PyObject *PLyUnicode_FromString(const char *s);
+#endif
+
 static char *get_python_error();
 
 /* Stack of error messages obtained when no connectivity was available */
