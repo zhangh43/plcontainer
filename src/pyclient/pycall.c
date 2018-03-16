@@ -32,35 +32,9 @@ static int process_call_results(plcConn *conn, PyObject *retval, plcPyFunction *
 static int fill_rawdata(rawdata *res, PyObject *retval, plcPyFunction *pyfunc);
 
 static PyObject *PyMainModule = NULL;
-static PyMethodDef moddef[] = {
-	/*
-	 * logging methods
-	 */
-	{"debug",          PLy_debug,          METH_VARARGS, NULL},
-	{"log",            PLy_log,            METH_VARARGS, NULL},
-	{"info",           PLy_info,           METH_VARARGS, NULL},
-	{"notice",         PLy_notice,         METH_VARARGS, NULL},
-	{"warning",        PLy_warning,        METH_VARARGS, NULL},
-	{"error",          PLy_error,          METH_VARARGS, NULL},
-	{"fatal",          PLy_fatal,          METH_VARARGS, NULL},
 
-	/*
-	 * create a stored plan
-	 */
-	{"prepare",        PLy_spi_prepare,    METH_VARARGS, NULL},
+extern void PLy_init_plpy(PyObject *PyMainModule);
 
-	/*
-	 * execute a plan or query
-	 */
-	{"execute",        PLy_spi_execute,    METH_VARARGS, NULL},
-
-	/*
-	 * create the subtransaction context manager
-	 */
-	{"subtransaction", PLy_subtransaction, METH_NOARGS,  NULL},
-
-	{NULL, NULL, 0,                                      NULL}
-};
 
 #if PY_MAJOR_VERSION >= 3
 static PyModuleDef plc_plpy_module = {
@@ -92,20 +66,10 @@ int python_init() {
 	if (PyType_Ready(&PLy_SubtransactionType) < 0)
 			plc_elog (ERROR, "could not initialize PLy_SubtransactionType");
 
-	/* create the plpy module */
-#if PY_MAJOR_VERSION >= 3
-	plpymod = PyModule_Create(&plc_plpy_module);
-	PyImport_AppendInittab("plpy", PyInit_plpy);
-#else
-	plpymod = Py_InitModule("plpy", moddef);
-	Ply_spi_exception_init(plpymod);
-#endif
-
 	/* Initialize the main module */
 	PyMainModule = PyImport_ImportModule("__main__");
 
-	/* Add plpy module to it */
-	PyModule_AddObject(PyMainModule, "plpy", plpymod);
+	PLy_init_plpy();
 
 	/* Get module dictionary of objects */
 	dict = PyModule_GetDict(PyMainModule);

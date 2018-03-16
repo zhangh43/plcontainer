@@ -73,6 +73,36 @@ static PyModuleDef PLy_exc_module = {
 PLyInit_plpy(void);
 #endif
 
+static PyMethodDef moddef[] = {
+	/*
+	 * logging methods
+	 */
+	{"debug",          PLy_debug,          METH_VARARGS, NULL},
+	{"log",            PLy_log,            METH_VARARGS, NULL},
+	{"info",           PLy_info,           METH_VARARGS, NULL},
+	{"notice",         PLy_notice,         METH_VARARGS, NULL},
+	{"warning",        PLy_warning,        METH_VARARGS, NULL},
+	{"error",          PLy_error,          METH_VARARGS, NULL},
+	{"fatal",          PLy_fatal,          METH_VARARGS, NULL},
+
+	/*
+	 * create a stored plan
+	 */
+	{"prepare",        PLy_spi_prepare,    METH_VARARGS, NULL},
+
+	/*
+	 * execute a plan or query
+	 */
+	{"execute",        PLy_spi_execute,    METH_VARARGS, NULL},
+
+	/*
+	 * create the subtransaction context manager
+	 */
+	{"subtransaction", PLy_subtransaction, METH_NOARGS,  NULL},
+
+	{NULL, NULL, 0,                                      NULL}
+};
+
 static PyMethodDef PLy_subtransaction_methods[] = {
 	{"__enter__", PLy_subtransaction_enter, METH_VARARGS, NULL},
 	{"__exit__",  PLy_subtransaction_exit,  METH_VARARGS, NULL},
@@ -115,6 +145,7 @@ PyTypeObject PLy_SubtransactionType = {
 	0,                            /* tp_iter */
 	0,                            /* tp_iternext */
 	PLy_subtransaction_methods, /* tp_tpmethods */
+	0,
 	0,
 	0,
 	0,
@@ -204,6 +235,7 @@ PyTypeObject PLy_PlanType = {
 	0,                            /* tp_iter */
 	0,                            /* tp_iternext */
 	PLy_plan_methods,            /* tp_tpmethods */
+	0,
 	0,
 	0,
 	0,
@@ -985,3 +1017,23 @@ PLyInit_plpy(void)
 	return m;
 }
 #endif
+
+
+
+
+void
+PLy_init_plpy(PyObject *PyMainModule)
+{
+	PyObject *plpymod = NULL;
+
+	/* create the plpy module */
+#if PY_MAJOR_VERSION >= 3
+	plpymod = PyModule_Create(&plc_plpy_module);
+	PyImport_AppendInittab("plpy", PyInit_plpy);
+#else
+	plpymod = Py_InitModule("plpy", moddef);
+	Ply_spi_exception_init(plpymod);
+#endif
+	/* Add plpy module to it */
+	PyModule_AddObject(PyMainModule, "plpy", plpymod);
+}
