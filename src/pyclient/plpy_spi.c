@@ -117,7 +117,6 @@ static PyModuleDef PLy_exc_module = {
 	NULL						/* m_free */
 };
 
-static void PLyInit_plpy(void);
 #endif
 
 static PyMethodDef PLy_subtransaction_methods[] = {
