@@ -100,6 +100,10 @@ static PyModuleDef PLy_module = {
 	NULL,						/* m_doc */
 	-1,							/* m_size */
 	PLy_methods,				/* m_methods */
+	NULL,
+	NULL,
+	NULL,
+	NULL,
 };
 
 static PyModuleDef PLy_exc_module = {
@@ -114,7 +118,7 @@ static PyModuleDef PLy_exc_module = {
 	NULL						/* m_free */
 };
 
-PLyInit_plpy(void);
+static void PLyInit_plpy(void);
 #endif
 
 static PyMethodDef PLy_subtransaction_methods[] = {
@@ -1042,8 +1046,8 @@ PLy_init_plpy(PyObject *PyMainModule)
 
 	/* create the plpy module */
 #if PY_MAJOR_VERSION >= 3
-	plpymod = PyModule_Create(&plc_plpy_module);
-	PyImport_AppendInittab("plpy", PyInit_plpy);
+	plpymod = PyModule_Create(&PLy_module);
+	PyImport_AppendInittab("plpy", PLyInit_plpy);
 #else
 	plpymod = Py_InitModule("plpy", PLy_methods);
 	Ply_spi_exception_init(plpymod);
