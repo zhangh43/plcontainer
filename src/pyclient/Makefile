@@ -10,7 +10,7 @@
 PLCONTAINER_DIR = ..
 
 ifeq ($(PYTHON),)
-  PYTHON = python
+  PYTHON = python3.6
 endif
 
 # Python build flags
