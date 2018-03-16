@@ -14,6 +14,10 @@
 
 #include <Python.h>
 
+#if PY_MAJOR_VERSION >= 3
+extern PyObject *PLyUnicode_FromString(const char *s);
+#endif
+
 static PyObject *PLy_output(volatile int, PyObject *, PyObject *);
 
 PyObject *PLy_debug(PyObject *self, PyObject *args) {
