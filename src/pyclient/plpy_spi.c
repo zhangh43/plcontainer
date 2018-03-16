@@ -22,6 +22,20 @@ typedef struct PLySubtransactionObject {
 } PLySubtransactionObject;
 
 
+extern PyObject *PLy_debug(PyObject *self, PyObject *args);
+
+extern PyObject *PLy_log(PyObject *self, PyObject *args);
+
+extern PyObject *PLy_info(PyObject *self, PyObject *args);
+
+extern PyObject *PLy_notice(PyObject *self, PyObject *args);
+
+extern PyObject *PLy_warning(PyObject *self, PyObject *args);
+
+extern PyObject *PLy_error(PyObject *self, PyObject *args);
+
+extern PyObject *PLy_fatal(PyObject *self, PyObject *args);
+
 static PyObject *PLy_subtransaction_new(void);
 
 static void PLy_subtransaction_dealloc(PyObject *);
