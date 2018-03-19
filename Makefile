@@ -26,7 +26,7 @@ OBJS = $(foreach FILE,$(FILES),$(subst .c,.o,$(FILE)))
 PGXS := $(shell pg_config --pgxs)
 include $(PGXS)
 
-# FIXME: We might need a configure script to handle below checks later.
+# FIXME2: We might need a configure script to handle below checks later.
 # See https://github.com/greenplum-db/plcontainer/issues/322
 
 # Plcontainer version
