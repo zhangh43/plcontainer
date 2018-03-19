@@ -30,7 +30,7 @@ include $(PGXS)
 # See https://github.com/greenplum-db/plcontainer/issues/322
 
 # Plcontainer version
-PLCONTAINER_VERSION = $(shell git describe)
+PLCONTAINER_VERSION = "1.3.0-3-gd7ba1b0"
 ifeq ($(PLCONTAINER_VERSION),)
   $(error can not determine the plcontainer version)
 else
@@ -89,10 +89,10 @@ RHEL_MAJOR_OS=$(shell cat /etc/redhat-release | sed s/.*release\ // | sed s/\ .*
 ifeq ($(RHEL_MAJOR_OS), 6)
   override CFLAGS +=  -DDOCKER_API_LOW
 endif
-all: all-lib build-clients
+all: all-lib
 	@echo "Build PL/Container Done."
 
-install: all installdirs install-lib install-extra install-clients
+install: all installdirs install-lib install-extra
 
 clean: clean-clients clean-coverage
 distclean: distclean-config
