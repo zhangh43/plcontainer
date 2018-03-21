@@ -134,8 +134,8 @@ resources:
 - name: plcontainer_src
   type: git
   source:
-    branch: master
-    uri: https://github.com/greenplum-db/plcontainer.git
+    branch: resgroup_extension
+    uri: https://github.com/zhangh43/plcontainer.git
 
 - name: gpdb_src
   type: git
@@ -412,6 +412,7 @@ jobs:
     tags: ["ccp"]
     file: plcontainer_src/concourse/tasks/plcontainer_resgroup_tests.yml
     params:
+      TEST_OS: centos6
       platform: centos6
     image: centos-gpdb-dev-6
     input_mapping:
@@ -539,6 +540,7 @@ jobs:
     tags: ["ccp"]
     file: plcontainer_src/concourse/tasks/plcontainer_resgroup_tests.yml
     params:
+      TEST_OS: centos7
       platform: centos7
     image: centos-gpdb-dev-7
     input_mapping:
