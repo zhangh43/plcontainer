@@ -32,6 +32,13 @@ EOF
 make_cgroups_dir ccp-${CLUSTER_NAME}-0
 make_cgroups_dir ccp-${CLUSTER_NAME}-1
 
+pushd gpdb_src
+./configure --prefix=/usr/local/greenplum-db-devel \
+            --without-zlib --without-rt --without-libcurl \
+            --without-libedit-preferred --without-docdir --without-readline \
+            --disable-gpcloud --disable-gpfdist --disable-orca \
+            --disable-pxf
+popd
 pushd gpdb_src/src/test/isolation2
 make
 scp -r pg_isolation2_regress mdw:/usr/local/greenplum-db-devel/lib/postgresql/pgxs/src/test/regress/
