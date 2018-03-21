@@ -12,6 +12,7 @@
 #include <sys/stat.h>
 
 #include "postgres.h"
+#include "commands/resgroupcmds.h"
 #include "utils/builtins.h"
 #include "utils/guc.h"
 #include "libpq/libpq-be.h"
@@ -23,6 +24,8 @@
 #include "plc_backend_api.h"
 #include "plc_docker_api.h"
 #include "plc_configuration.h"
+
+//#define atooid(x)  ((Oid) strtoul((x), NULL, 10))
 
 // we just want to avoid cleanup process to remove previous domain
 // socket file, so int32 is sufficient
@@ -156,6 +159,7 @@ static void parse_runtime_configuration(xmlNode *node) {
 		conf_entry->cpuShare = 1024;
 		conf_entry->useContainerLogging = false;
 		conf_entry->useContainerNetwork = false;
+		conf_entry->resgroupOid = InvalidOid;
 
 
 		for (cur_node = node->children; cur_node; cur_node = cur_node->next) {
@@ -234,6 +238,22 @@ static void parse_runtime_configuration(xmlNode *node) {
 					 * this should be set by various backend implementation.
 					 */
 					conf_entry->useContainerNetwork = false;
+					value = xmlGetProp(cur_node, (const xmlChar *) "resource_group_id");
+					if (value != NULL) {
+						validSetting = true;
+						/*check gp_resgroup to find the oid of resgroup*/
+						if (strlen((char *) value) == 0) {
+							plc_elog(ERROR, "SETTING length of element <resource_group_id> is zero");
+						}
+						Oid resgroupOid = (Oid)pg_atoi((char *)value, sizeof(int), 0);
+						if (resgroupOid == InvalidOid) {
+							plc_elog(ERROR, "SETTING element <resource_group_name> must be a resource group in greenplum. "
+									"Current setting is: %s", (char *) value);
+						}
+						conf_entry->resgroupOid = resgroupOid;
+						xmlFree((void *) value);
+						value = NULL;
+					}
 					if (!validSetting) {
 						plc_elog(ERROR, "Unrecognized setting options, please check the configuration file: %s", conf_entry->runtimeid);
 					}
@@ -402,6 +422,7 @@ static void print_runtime_configurations() {
 			plc_elog(INFO, "    memory_mb = '%d'", conf_entry->memoryMb);
 			plc_elog(INFO, "    cpu_share = '%d'", conf_entry->cpuShare);
 			plc_elog(INFO, "    use container logging  = '%s'", conf_entry->useContainerLogging ? "yes" : "no");
+			plc_elog(INFO, "    resource group name  = '%u'", conf_entry->resgroupOid);
 			for (j = 0; j < conf_entry->nSharedDirs; j++) {
 				plc_elog(INFO, "    shared directory from host '%s' to container '%s'",
 					 conf_entry->sharedDirs[j].host,
@@ -523,7 +544,6 @@ runtimeConfEntry *plc_get_runtime_configuration(char *runtime_id) {
 		}
 	}
 
-	//const char* rr = (const char*) runtime_id;
 	/* find the corresponding runtime config*/
 	entry = (runtimeConfEntry *) hash_search(rumtime_conf_table,  (const void *) runtime_id, HASH_FIND, NULL);
 
