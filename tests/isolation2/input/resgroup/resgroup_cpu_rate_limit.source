@@ -9,6 +9,8 @@ DROP RESOURCE GROUP rg2_cpu_test;
 DROP LANGUAGE IF EXISTS plpythonu;
 CREATE EXTENSION plcontainer;
 CREATE LANGUAGE plpythonu;
+ALTER RESOURCE GROUP default_group SET memory_limit 1;
+ALTER RESOURCE GROUP admin_group SET memory_limit 10;
 -- end_ignore
 
 -- plcontainer busy function.
@@ -177,5 +179,6 @@ SELECT * FROM cancel_all;
 17<:
 18<:
 19<:
+ALTER RESOURCE GROUP admin_group SET memory_limit 35;
 -- end_ignore
 
