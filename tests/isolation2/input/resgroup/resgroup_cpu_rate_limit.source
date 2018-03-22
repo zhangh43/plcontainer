@@ -16,13 +16,12 @@ ALTER RESOURCE GROUP admin_group SET memory_limit 10;
 -- plcontainer busy function.
 CREATE OR REPLACE FUNCTION plbusy() RETURNS VOID AS $$
 # container: plc_python_shared
-import md5
 n=100000000000
 p=2
-m = md5.new()
-s = '1'*1000000
 while p <= n:
-	m.update(s)
+	for i in range(2, p):
+		if p%i == 0:
+			p=p+1	
 	p=p+1
 $$ LANGUAGE plcontainer;
 
@@ -90,6 +89,12 @@ CREATE VIEW cancel_all AS
     FROM pg_stat_activity
     WHERE current_query LIKE 'SELECT * FROM busy%' or current_query LIKE 'SELECT plbusy%';
 
+
+
+CREATE TABLE a1(i int);
+insert into a1 select generate_series(1,1000);
+
+
 ALTER RESOURCE GROUP admin_group SET cpu_rate_limit 1;
 -- ALTER RESOURCE GROUP admin_group SET cpu_rate_limit 30;
 ALTER RESOURCE GROUP plgroup SET cpu_rate_limit 20;
@@ -106,9 +111,8 @@ CREATE ROLE role1_cpu_test RESOURCE GROUP rg1_cpu_test;
 CREATE ROLE role2_cpu_test RESOURCE GROUP rg2_cpu_test;
 GRANT ALL ON busy TO role1_cpu_test;
 GRANT ALL ON plbusy TO role2_cpu_test;
-
+GRANT ALL ON a1 TO role2_cpu_test;
 -- prepare parallel queries in the two groups
-10: SET ROLE TO role1_cpu_test;
 11: SET ROLE TO role1_cpu_test;
 12: SET ROLE TO role2_cpu_test;
 13: SET ROLE TO role2_cpu_test;
@@ -118,6 +122,16 @@ GRANT ALL ON plbusy TO role2_cpu_test;
 17: SET ROLE TO role2_cpu_test;
 18: SET ROLE TO role2_cpu_test;
 19: SET ROLE TO role2_cpu_test;
+
+11: SET optimizer = off;
+12: SET optimizer = off;
+13: SET optimizer = off;
+14: SET optimizer = off;
+15: SET optimizer = off;
+16: SET optimizer = off;
+17: SET optimizer = off;
+18: SET optimizer = off;
+19: SET optimizer = off;
 
 --
 -- a group should burst to use all the cpu usage
@@ -129,16 +143,15 @@ GRANT ALL ON plbusy TO role2_cpu_test;
 -- so the cpu usage shall be 90%
 --
 
-10&: SELECT * FROM busy;
 11&: SELECT * FROM busy;
-12&: SELECT plbusy();
-13&: SELECT plbusy();
-14&: SELECT plbusy();
-15&: SELECT plbusy();
-16&: SELECT plbusy();
-17&: SELECT plbusy();
-18&: SELECT plbusy();
-19&: SELECT plbusy();
+12&: SELECT plbusy() from a1;
+13&: SELECT plbusy() from a1;
+14&: SELECT plbusy() from a1;
+15&: SELECT plbusy() from a1;
+16&: SELECT plbusy() from a1;
+17&: SELECT plbusy() from a1;
+18&: SELECT plbusy() from a1;
+19&: SELECT plbusy() from a1;
 
 -- start_ignore
 TRUNCATE TABLE cpu_usage_samples;
@@ -169,7 +182,6 @@ SELECT verify_cpu_usage('plgroup', 40, 10);
 
 -- start_ignore
 SELECT * FROM cancel_all;
-10<:
 11<:
 12<:
 13<:
@@ -179,6 +191,5 @@ SELECT * FROM cancel_all;
 17<:
 18<:
 19<:
-ALTER RESOURCE GROUP admin_group SET memory_limit 35;
 -- end_ignore
 
