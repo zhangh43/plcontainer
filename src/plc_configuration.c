@@ -418,7 +418,7 @@ static void print_runtime_configurations() {
 			plc_elog(INFO, "    memory_mb = '%d'", conf_entry->memoryMb);
 			plc_elog(INFO, "    cpu_share = '%d'", conf_entry->cpuShare);
 			plc_elog(INFO, "    use container logging  = '%s'", conf_entry->useContainerLogging ? "yes" : "no");
-			if (resgroupOid != InvalidOid)
+			if (conf_entry->resgroupOid != InvalidOid)
 			{
 				plc_elog(INFO, "    resource group id  = '%u'", conf_entry->resgroupOid);
 			}
