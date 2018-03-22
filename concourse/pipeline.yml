@@ -412,7 +412,7 @@ jobs:
       <<: *ccp_destroy6
   - task: plcontainer
     tags: ["ccp"]
-    file: plcontainer_src/concourse/tasks/plcontainer_test.yml
+    file: plcontainer_src/concourse/tasks/plcontainer_tests.yml
     params:
       platform: centos6
     image: centos-gpdb-dev-6
@@ -600,7 +600,7 @@ jobs:
       <<: *ccp_destroy7
   - task: plcontainer
     tags: ["ccp"]
-    file: plcontainer_src/concourse/tasks/plcontainer_test.yml
+    file: plcontainer_src/concourse/tasks/plcontainer_tests.yml
     params:
       platform: centos7
     image: centos-gpdb-dev-7
