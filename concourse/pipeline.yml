@@ -136,8 +136,8 @@ resources:
 - name: plcontainer_src
   type: git
   source:
-    branch: resgroup_extension
-    uri: https://github.com/zhangh43/plcontainer.git
+    branch: {{plcontainer_git_branch}}
+    uri: {{plcontainer_git_remote}}
 
 - name: gpdb_src
   type: git
