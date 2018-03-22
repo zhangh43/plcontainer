@@ -192,7 +192,9 @@ SELECT * FROM cancel_all;
 18<:
 19<:
 
-DROP RESOURCE GROUP rg1_cpu_test;
-DROP RESOURCE GROUP rg2_cpu_test;
+ALTER RESOURCE GROUP rg1_cpu_test SET cpu_rate_limit 1;
+ALTER RESOURCE GROUP rg1_cpu_test SET memory_limit 1;
+ALTER RESOURCE GROUP rg2_cpu_test SET cpu_rate_limit 1;
+ALTER RESOURCE GROUP rg2_cpu_test SET memory_limit 1;
 -- end_ignore
 

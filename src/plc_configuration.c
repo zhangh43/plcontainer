@@ -418,7 +418,10 @@ static void print_runtime_configurations() {
 			plc_elog(INFO, "    memory_mb = '%d'", conf_entry->memoryMb);
 			plc_elog(INFO, "    cpu_share = '%d'", conf_entry->cpuShare);
 			plc_elog(INFO, "    use container logging  = '%s'", conf_entry->useContainerLogging ? "yes" : "no");
-			plc_elog(INFO, "    resource group name  = '%u'", conf_entry->resgroupOid);
+			if (resgroupOid != InvalidOid)
+			{
+				plc_elog(INFO, "    resource group id  = '%u'", conf_entry->resgroupOid);
+			}
 			for (j = 0; j < conf_entry->nSharedDirs; j++) {
 				plc_elog(INFO, "    shared directory from host '%s' to container '%s'",
 					 conf_entry->sharedDirs[j].host,
