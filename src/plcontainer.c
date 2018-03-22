@@ -14,8 +14,6 @@
 #include "utils/faultinjector.h"
 #include "utils/memutils.h"
 #include "utils/guc.h"
-#include "utils/resgroup.h"
-#include "utils/resgroup-ops.h"
 /* PLContainer Headers */
 #include "common/comm_channel.h"
 #include "common/messages/messages.h"

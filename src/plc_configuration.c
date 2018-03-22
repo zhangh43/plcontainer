@@ -12,7 +12,6 @@
 #include <sys/stat.h>
 
 #include "postgres.h"
-#include "commands/resgroupcmds.h"
 #include "utils/builtins.h"
 #include "utils/guc.h"
 #include "libpq/libpq-be.h"
@@ -24,8 +23,6 @@
 #include "plc_backend_api.h"
 #include "plc_docker_api.h"
 #include "plc_configuration.h"
-
-//#define atooid(x)  ((Oid) strtoul((x), NULL, 10))
 
 // we just want to avoid cleanup process to remove previous domain
 // socket file, so int32 is sufficient
@@ -241,13 +238,12 @@ static void parse_runtime_configuration(xmlNode *node) {
 					value = xmlGetProp(cur_node, (const xmlChar *) "resource_group_id");
 					if (value != NULL) {
 						validSetting = true;
-						/*check gp_resgroup to find the oid of resgroup*/
 						if (strlen((char *) value) == 0) {
 							plc_elog(ERROR, "SETTING length of element <resource_group_id> is zero");
 						}
 						Oid resgroupOid = (Oid)pg_atoi((char *)value, sizeof(int), 0);
 						if (resgroupOid == InvalidOid) {
-							plc_elog(ERROR, "SETTING element <resource_group_name> must be a resource group in greenplum. "
+							plc_elog(ERROR, "SETTING element <resource_group_id> must be a resource group id in greenplum. "
 									"Current setting is: %s", (char *) value);
 						}
 						conf_entry->resgroupOid = resgroupOid;

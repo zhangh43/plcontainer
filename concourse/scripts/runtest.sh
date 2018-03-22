@@ -10,7 +10,6 @@ gpconfig -c gp_resource_manager -v "group";
 gpstop -arf;
 psql -d postgres -f /usr/local/greenplum-db-devel/share/postgresql/plcontainer/plcontainer_install.sql;
 psql -d postgres -c "create resource group plgroup with(concurrency=0,cpu_rate_limit=10,memory_limit=30,memory_auditor='cgroup');";
-psql -d postgres -c "alter resource group admin_group set memory_limit 35;";
 
 groupid=`psql -d postgres -t -q -c "select groupid from gp_toolkit.gp_resgroup_config where groupname='plgroup';"`;
 groupid=`echo $groupid | awk '{$1=$1};1'`;
@@ -20,6 +19,9 @@ plcontainer runtime-add -r plc_r_shared -i pivotaldata/plcontainer_r_shared:deve
 pushd plcontainer_src/tests/isolation2;
 make resgroup;
 popd;
+
+psql -d postgres -c "alter resource group admin_group set cpu_rate_limit 20;";
+psql -d postgres -c "alter resource group admin_group set memory_limit 35;";
 pushd plcontainer_src/tests;
 timeout -s 9 60m make resgroup;
 popd;

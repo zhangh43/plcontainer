@@ -191,5 +191,8 @@ SELECT * FROM cancel_all;
 17<:
 18<:
 19<:
+
+DROP RESOURCE GROUP rg1_cpu_test;
+DROP RESOURCE GROUP rg2_cpu_test;
 -- end_ignore
 

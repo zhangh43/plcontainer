@@ -676,8 +676,8 @@ def runtime_show_xml(filename, r_id):
                         sys.stdout.write("  ---- Container CPU share: %s\n" % settings.attrib['cpu_share'])
                     elif 'use_container_logging' in settings.attrib:
                         sys.stdout.write("  ---- Use Container Logging: %s\n" % settings.attrib['use_container_logging'])
-                    elif 'resource_group_name' in settings.attrib:
-                        sys.stdout.write("  ---- Resource Group Name: %s\n" % settings.attrib['resource_group_name'])
+                    elif 'resource_group_id' in settings.attrib:
+                        sys.stdout.write("  ---- Resource Group ID: %s\n" % settings.attrib['resource_group_id'])
                 sys.stdout.write("  Shared Directory: \n")
                 for share_folder in runtime.findall('shared_directory'):
                     sys.stdout.write("  ---- Shared Directory From HOST '%s' to Container '%s', access mode is '%s'\n" % (share_folder.attrib['host'], share_folder.attrib['container'], share_folder.attrib['access']))
