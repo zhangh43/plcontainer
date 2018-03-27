@@ -1,0 +1,143 @@
+-- start_ignore
+DROP VIEW IF EXISTS busy;
+DROP VIEW IF EXISTS cancel_all;
+DROP TABLE IF EXISTS bigtable;
+DROP ROLE IF EXISTS role1_mem_test;
+DROP ROLE IF EXISTS role2_mem_test;
+DROP RESOURCE GROUP rg1_mem_test;
+DROP RESOURCE GROUP rg2_mem_test;
+DROP LANGUAGE IF EXISTS plpythonu CASCADE;
+CREATE EXTENSION IF NOT EXISTS plcontainer;
+CREATE LANGUAGE plpythonu;
+ALTER RESOURCE GROUP default_group SET memory_limit 1;
+ALTER RESOURCE GROUP admin_group SET memory_limit 10;
+-- end_ignore
+
+-- plcontainer busy function.
+CREATE OR REPLACE FUNCTION plbigmemory() RETURNS VOID AS $$
+# container: plc_python_shared
+import time
+from subprocess import *
+p1 = Popen(["free", "-m"], stdout=PIPE)
+res = p1.communicate()
+mem_available = int(res[0].split("\n")[1].split()[-1])
+ratio = 17113 / mem_available
+bytes_num = 100000000 * ratio
+f = ['d'] * bytes_num
+f[9] = 'c'
+f[1000000] = 'd'
+time.sleep(5)
+$$ LANGUAGE plcontainer;
+
+DROP TABLE IF EXISTS bigtable;
+CREATE TABLE bigtable AS
+    SELECT i AS c1, 'abc' AS c2
+    FROM generate_series(1,50000) i;
+
+DROP TABLE IF EXISTS smalltable;
+CREATE TABLE smalltable(i int);
+insert into smalltable select generate_series(1,1000);
+
+DROP TABLE IF EXISTS a1;
+CREATE TABLE a1(i int);
+insert into a1 values (1);
+
+
+ALTER RESOURCE GROUP admin_group SET cpu_rate_limit 1;
+-- ALTER RESOURCE GROUP admin_group SET cpu_rate_limit 30;
+ALTER RESOURCE GROUP plgroup SET cpu_rate_limit 20;
+
+CREATE RESOURCE GROUP rg1_mem_test WITH (concurrency=20, cpu_rate_limit=20, memory_limit=20);
+CREATE RESOURCE GROUP rg2_mem_test WITH (concurrency=20, cpu_rate_limit=20, memory_limit=20);
+--
+-- now we get prepared.
+--
+-- on empty load the cpu usage shall be 0%
+--
+-- create two roles and assign them to above groups
+CREATE ROLE role1_mem_test RESOURCE GROUP rg1_mem_test;
+CREATE ROLE role2_mem_test RESOURCE GROUP rg2_mem_test;
+GRANT ALL ON FUNCTION plbigmemory TO role2_mem_test;
+GRANT ALL ON a1 TO role2_mem_test;
+GRANT ALL ON smalltable TO role1_mem_test;
+GRANT ALL ON bigtable TO role1_mem_test;
+-- prepare parallel queries in the two groups
+8: SET ROLE TO role1_mem_test;
+9: SET ROLE TO role1_mem_test;
+10: SET ROLE TO role1_mem_test;
+11: SET ROLE TO role1_mem_test;
+12: SET ROLE TO role2_mem_test;
+13: SET ROLE TO role2_mem_test;
+14: SET ROLE TO role2_mem_test;
+15: SET ROLE TO role2_mem_test;
+16: SET ROLE TO role2_mem_test;
+17: SET ROLE TO role2_mem_test;
+18: SET ROLE TO role2_mem_test;
+19: SET ROLE TO role2_mem_test;
+20: SET ROLE TO role2_mem_test;
+21: SET ROLE TO role2_mem_test;
+
+8: SET optimizer = off;
+9: SET optimizer = off;
+10: SET optimizer = off;
+11: SET optimizer = off;
+12: SET optimizer = off;
+13: SET optimizer = off;
+14: SET optimizer = off;
+15: SET optimizer = off;
+16: SET optimizer = off;
+17: SET optimizer = off;
+18: SET optimizer = off;
+19: SET optimizer = off;
+20: SET optimizer = off;
+21: SET optimizer = off;
+--
+-- a group should burst to use all the cpu usage
+-- when it's the only one with running queries.
+--
+-- however the overall cpu usage is controlled by a GUC
+-- gp_resource_group_cpu_limit which is 90% by default.
+--
+-- so the cpu usage shall be 90%
+--
+
+8&: select count(*) from bigtable t1, bigtable t2, smalltable where t1.c1 =t2.c1 and t1.c1>smalltable.i;
+9&: select count(*) from bigtable t1, bigtable t2, smalltable where t1.c1 =t2.c1 and t1.c1>smalltable.i;
+10&: select count(*) from bigtable t1, bigtable t2, smalltable where t1.c1 =t2.c1 and t1.c1>smalltable.i;
+11&: select count(*) from bigtable t1, bigtable t2, smalltable where t1.c1 =t2.c1 and t1.c1>smalltable.i;
+12&: SELECT plbigmemory() from a1;
+13&: SELECT plbigmemory() from a1;
+14&: SELECT plbigmemory() from a1;
+15&: SELECT plbigmemory() from a1;
+16&: SELECT plbigmemory() from a1;
+17&: SELECT plbigmemory() from a1;
+18&: SELECT plbigmemory() from a1;
+19&: SELECT plbigmemory() from a1;
+20&: SELECT plbigmemory() from a1;
+21&: SELECT plbigmemory() from a1;
+-- start_ignore
+-- SELECT pg_sleep(10);
+-- end_ignore
+
+8<:
+9<:
+10<:
+11<:
+-- start_ignore
+12<:
+13<:
+14<:
+15<:
+16<:
+17<:
+18<:
+19<:
+20<:
+21<:
+
+ALTER RESOURCE GROUP rg1_mem_test SET cpu_rate_limit 1;
+ALTER RESOURCE GROUP rg1_mem_test SET memory_limit 1;
+ALTER RESOURCE GROUP rg2_mem_test SET cpu_rate_limit 1;
+ALTER RESOURCE GROUP rg2_mem_test SET memory_limit 1;
+-- end_ignore
+
