@@ -245,7 +245,7 @@ static void parse_runtime_configuration(xmlNode *node) {
 						}
 						Oid resgroupOid = (Oid) pg_atoi((char *) value,
 								sizeof(int), 0);
-						if (resgroupOid == InvalidOid || GetResGroupNameForId(resgroupOid) == NULL) {
+						if (resgroupOid == InvalidOid || GetResGroupNameForId(resgroupOid, AccessShareLock) == NULL) {
 							plc_elog(ERROR,
 									"SETTING element <resource_group_id> must be a resource group id in greenplum. " "Current setting is: %s",
 									(char * ) value);
