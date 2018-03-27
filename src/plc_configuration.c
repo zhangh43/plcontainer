@@ -250,7 +250,7 @@ static void parse_runtime_configuration(xmlNode *node) {
 									"SETTING element <resource_group_id> must be a resource group id in greenplum. " "Current setting is: %s",
 									(char * ) value);
 						}
-						int32 memAuditor = GetResGroupMemAuditorForId(resgroupOid);
+						int32 memAuditor = GetResGroupMemAuditorForId(resgroupOid, AccessShareLock);
 						if (memAuditor != RESGROUP_MEMORY_AUDITOR_CGROUP) {
 							plc_elog(ERROR,
 									"SETTING element <resource_group_id> must be a resource group with memory_auditor type cgroup.");
