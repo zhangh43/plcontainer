@@ -57,7 +57,6 @@ CREATE RESOURCE GROUP rg2_mem_test WITH (concurrency=20, cpu_rate_limit=20, memo
 -- create two roles and assign them to above groups
 CREATE ROLE role1_mem_test RESOURCE GROUP rg1_mem_test;
 CREATE ROLE role2_mem_test RESOURCE GROUP rg2_mem_test;
-GRANT ALL ON FUNCTION plbigmemory TO role2_mem_test;
 GRANT ALL ON a1 TO role2_mem_test;
 GRANT ALL ON smalltable TO role1_mem_test;
 GRANT ALL ON bigtable TO role1_mem_test;
