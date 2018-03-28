@@ -21,6 +21,19 @@ typedef struct PLySubtransactionObject {
 	bool exited;
 } PLySubtransactionObject;
 
+extern PyObject *PLy_debug(PyObject *self, PyObject *args);
+
+extern PyObject *PLy_log(PyObject *self, PyObject *args);
+
+extern PyObject *PLy_info(PyObject *self, PyObject *args);
+
+extern PyObject *PLy_notice(PyObject *self, PyObject *args);
+
+extern PyObject *PLy_warning(PyObject *self, PyObject *args);
+
+extern PyObject *PLy_error(PyObject *self, PyObject *args);
+
+extern PyObject *PLy_fatal(PyObject *self, PyObject *args);
 
 static PyObject *PLy_subtransaction_new(void);
 
@@ -49,6 +62,36 @@ static PyMethodDef PLy_exc_methods[] = {
 	{NULL, NULL, 0, NULL}
 };
 
+static PyMethodDef PLy_methods[] = {
+	/*
+	 * logging methods
+	 */
+	{"debug",          PLy_debug,          METH_VARARGS, NULL},
+	{"log",            PLy_log,            METH_VARARGS, NULL},
+	{"info",           PLy_info,           METH_VARARGS, NULL},
+	{"notice",         PLy_notice,         METH_VARARGS, NULL},
+	{"warning",        PLy_warning,        METH_VARARGS, NULL},
+	{"error",          PLy_error,          METH_VARARGS, NULL},
+	{"fatal",          PLy_fatal,          METH_VARARGS, NULL},
+
+	/*
+	 * create a stored plan
+	 */
+	{"prepare",        PLy_spi_prepare,    METH_VARARGS, NULL},
+
+	/*
+	 * execute a plan or query
+	 */
+	{"execute",        PLy_spi_execute,    METH_VARARGS, NULL},
+
+	/*
+	 * create the subtransaction context manager
+	 */
+	{"subtransaction", PLy_subtransaction, METH_NOARGS,  NULL},
+
+	{NULL, NULL, 0,                                      NULL}
+};
+
 #if PY_MAJOR_VERSION >= 3
 static PyModuleDef PLy_module = {
 	PyModuleDef_HEAD_INIT,		/* m_base */
@@ -56,6 +99,10 @@ static PyModuleDef PLy_module = {
 	NULL,						/* m_doc */
 	-1,							/* m_size */
 	PLy_methods,				/* m_methods */
+	NULL,
+	NULL,
+	NULL,
+	NULL,
 };
 
 static PyModuleDef PLy_exc_module = {
@@ -70,7 +117,6 @@ static PyModuleDef PLy_exc_module = {
 	NULL						/* m_free */
 };
 
-PLyInit_plpy(void);
 #endif
 
 static PyMethodDef PLy_subtransaction_methods[] = {
@@ -115,6 +161,7 @@ PyTypeObject PLy_SubtransactionType = {
 	0,                            /* tp_iter */
 	0,                            /* tp_iternext */
 	PLy_subtransaction_methods, /* tp_tpmethods */
+	0,
 	0,
 	0,
 	0,
@@ -204,6 +251,7 @@ PyTypeObject PLy_PlanType = {
 	0,                            /* tp_iter */
 	0,                            /* tp_iternext */
 	PLy_plan_methods,            /* tp_tpmethods */
+	0,
 	0,
 	0,
 	0,
@@ -985,3 +1033,25 @@ PLyInit_plpy(void)
 	return m;
 }
 #endif
+
+
+
+
+void
+PLy_init_plpy(PyObject *PyMainModule)
+{
+	PyObject *plpymod = NULL;
+
+	/* create the plpy module */
+#if PY_MAJOR_VERSION >= 3
+	plpymod = PyModule_Create(&PLy_module);
+	PyImport_AppendInittab("plpy", PLyInit_plpy);
+#else
+	plpymod = Py_InitModule("plpy", PLy_methods);
+	Ply_spi_exception_init(plpymod);
+#endif
+	/* Add plpy module to it */
+	PyModule_AddObject(PyMainModule, "plpy", plpymod);
+}
+
+

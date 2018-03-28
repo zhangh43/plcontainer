@@ -21,4 +21,6 @@ PyObject *PLy_subtransaction(PyObject *, PyObject *);
 
 void Ply_spi_exception_init(PyObject *plpy);
 
+void PLy_init_plpy(PyObject *PyMainModule);
+
 #endif /* PLC_PYSPI_H */
