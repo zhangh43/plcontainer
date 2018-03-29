@@ -543,8 +543,8 @@ def validate_xml(filename):
                         raise Exception("Validation failed")
                 elif 'resource_group_id' in settings.attrib:
                     resource_group_id_str = settings.attrib['resource_group_id']
-                    if(len(resource_group_id_str) == 0):
-                        logger.error("length of 'resource_group_id_str' should not be zero.")
+                    if resource_group_id_str.isdigit() != True:
+                        logger.error("'resource_group_id_str' cannot contain non-digit, it should be oid of resource group")
                         raise Exception("Validation failed")
                 else:
                     logger.error("Found illegal setting in runtime %s: %s", runtime_id, settings.attrib)

@@ -329,6 +329,21 @@ EOF
 }
 
 f21 () {
+	echo "Test wrong resource group id which contain nondigit"
+  cat >/tmp/bad_xml_file << EOF
+<?xml version="1.0" ?>
+<configuration>
+    <runtime>
+        <id>plc_python_shared</id>
+        <image>not_exist_pivotaldata/plcontainer_python:0.1</image>
+        <command>./client</command>
+        <setting resource_group_id="plgroup"/>
+    </runtime>
+</configuration>
+EOF
+}
+
+f22 () {
 	echo "Test good format (but it still fails since the configuration (image/command) is not legal)"
   cat >/tmp/bad_xml_file << EOF
 <?xml version="1.0" ?>
@@ -393,6 +408,8 @@ function _main() {
 	  f20
   elif [ "$config_id" = "21" ]; then
 	  f21
+  elif [ "$config_id" = "22" ]; then
+	  f22
   fi
 
   if [ -z "$MASTER_DATA_DIRECTORY" ]; then
