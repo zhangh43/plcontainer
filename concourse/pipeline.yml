@@ -409,13 +409,16 @@ jobs:
       <<: *ccp_default_params
       vars:
         instance_type: n1-standard-1
-        platform: centos6
+        PLATFORM: centos6
         disk_size: 100
         disk_type: pd-ssd
+        zone: {{google-zone}}
+        region: {{google-region}}
   - task: gen_cluster
     file: ccp_src/ci/tasks/gen_cluster.yml
     params:
       <<: *ccp_gen_cluster_default_params
+      PLATFORM: centos6
   - task: gpinitsystem
     file: ccp_src/ci/tasks/gpinitsystem.yml
   - task: plcontainer
@@ -458,13 +461,16 @@ jobs:
       <<: *ccp_default_params
       vars:
         instance_type: n1-standard-1
-        platform: centos7
+        PLATFORM: centos7
         disk_size: 100
         disk_type: pd-ssd
+        zone: {{google-zone}}
+        region: {{google-region}}
   - task: gen_cluster
     file: ccp_src/ci/tasks/gen_cluster.yml
     params:
       <<: *ccp_gen_cluster_default_params
+      PLATFORM: centos7
   - task: gpinitsystem
     file: ccp_src/ci/tasks/gpinitsystem.yml
   - task: plcontainer
@@ -505,13 +511,16 @@ jobs:
       <<: *ccp_default_params
       vars:
         instance_type: n1-standard-1
-        platform: centos7
+        PLATFORM: centos7
         disk_size: 100
         disk_type: pd-ssd
+        zone: {{google-zone}}
+        region: {{google-region}}
   - task: gen_cluster
     file: ccp_src/ci/tasks/gen_cluster.yml
     params:
       <<: *ccp_gen_cluster_default_params
+      PLATFORM: centos7
   - task: gpinitsystem
     file: ccp_src/ci/tasks/gpinitsystem.yml
   - task: docker_build
@@ -551,13 +560,16 @@ jobs:
       <<: *ccp_default_params
       vars:
         instance_type: n1-standard-1
-        platform: centos7
+        PLATFORM: centos7
         disk_size: 100
         disk_type: pd-ssd
+        zone: {{google-zone}}
+        region: {{google-region}}
   - task: gen_cluster
     file: ccp_src/ci/tasks/gen_cluster.yml
     params:
       <<: *ccp_gen_cluster_default_params
+      PLATFORM: centos7
   - task: gpinitsystem
     file: ccp_src/ci/tasks/gpinitsystem.yml
   - task: docker_build
