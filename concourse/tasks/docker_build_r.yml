@@ -4,7 +4,7 @@ image_resource:
 inputs:
   - name: plcontainer_src
   - name: ccp_src
-  - name: terraform
+  - name: cluster_env_files
   - name: r
   - name: datascience
   - name: data-science-bundle
