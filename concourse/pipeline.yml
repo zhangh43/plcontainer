@@ -13,8 +13,7 @@ groups:
   - plcontainer_resgroup_test_centos6
   - plcontainer_function_test_centos7
   - plcontainer_resgroup_test_centos7
-  - plcontainer_function_binary_swap_centos6
-  - plcontainer_function_binary_swap_centos7
+  - plcontainer_resgroup_binary_swap_centos7
 
 ################################################################################
 ################################## RESOURCES ###################################
@@ -659,13 +658,10 @@ jobs:
   plan:
   - aggregate:
     - get: plcontainer_src
-      passed:
-      - plcontainer_build_centos7
     - get: gpdb_src
     - get: gpdb_binary
       resource: bin_gpdb_centos7
     - get: ccp_src
-      passed: [plcontainer_build_python_image, plcontainer_build_r_image]
     - get: centos-gpdb-dev-7
     - get: plcontainer_pyclient_docker_image
       resource: plcontainer_docker_image_centos_python
