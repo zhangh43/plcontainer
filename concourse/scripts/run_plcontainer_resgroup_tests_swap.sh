@@ -69,7 +69,7 @@ ssh mdw "bash -c \" \
 set -eox pipefail; \
 export MASTER_DATA_DIRECTORY=/data/gpdata/master/gpseg-1; \
 source /usr/local/greenplum-db-devel/greenplum_path.sh; \
-gppkg -u /tmp/plcontainer_gpdb_build/plcontainer*.gppkg; \
+gppkg -au /tmp/plcontainer_gpdb_build/plcontainer*.gppkg; \
 \""
 
 
