@@ -127,7 +127,7 @@ int sanity_check_client(void);
 		if (getppid() == PostmasterPid) { \
 			plc_elog(elevel, __VA_ARGS__); \
 		} else { \
-			write_log(__VA_ARGS__) \
+			write_log(__VA_ARGS__); \
 		} \
 	} while(0)
 
