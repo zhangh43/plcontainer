@@ -122,6 +122,17 @@ int sanity_check_client(void);
 
 #include "postgres.h"
 
+#define backendlog(elevel, ...)  \
+	do { \
+		if (getppid() == PostmasterPid) { \
+			plc_elog(elevel, __VA_ARGS__); \
+		} else { \
+			write_log(__VA_ARGS__) \
+		} \
+	} while(0)
+
+
+
 #define plc_elog(lvl, fmt, ...) elog(lvl, "plcontainer: " fmt, ##__VA_ARGS__);
 #define pmalloc palloc
 

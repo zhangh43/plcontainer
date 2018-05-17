@@ -418,7 +418,11 @@ int plc_docker_inspect_container(const char *name, char **element, plcInspection
 	}
 
 	if (res != 200) {
-		plc_elog(LOG, "Docker cannot inspect container, response: %s", response->data);
+		if (getppid() == PostmasterPid) {
+			plc_elog(LOG, "Docker cannot inspect container, response: %s", response->data);
+		} else {
+			write_log("Docker cannot inspect container, response: %s", response->data);
+		}
 		snprintf(backend_error_message, sizeof(backend_error_message),
 		         "Docker inspect api returns http code %d on container %s", res, name);
 		res = -1;
@@ -550,14 +554,18 @@ int plc_docker_get_container_state(const char *name, char **result) {
 
 static int docker_inspect_string(char *buf, char **element, plcInspectionMode type) {
 	int i;
-	plc_elog(DEBUG1, "plcontainer: docker_inspect_string:%s", buf);
+	if (getppid() == PostmasterPid) {
+		plc_elog(DEBUG1, "plcontainer: docker_inspect_string:%s", buf);
+	} else {
+		write_log("plcontainer: docker_inspect_string:%s", buf);
+	}
 	struct json_object *response = json_tokener_parse(buf);
 	if (response == NULL)
 		return -1;
 	if (type == PLC_INSPECT_NAME) {
 		struct json_object *nameidObj = NULL;
 		if (!json_object_object_get_ex(response, "Id", &nameidObj)) {
-			plc_elog(WARNING, "failed to get json \"Id\" field.");
+			backendlog(WARNING, "failed to get json \"Id\" field.");
 			return -1;
 		}
 		const char *namestr = json_object_get_string(nameidObj);
