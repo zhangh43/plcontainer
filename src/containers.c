@@ -16,11 +16,13 @@
 #include <sys/wait.h>
 
 #include "postgres.h"
+#include "miscadmin.h"
 #include "cdb/cdbvars.h"
 #include "storage/ipc.h"
 #include "libpq/pqsignal.h"
-#include "utils/ps_status.h"
 #include "utils/faultinjector.h"
+#include "utils/guc.h"
+#include "utils/ps_status.h"
 #include "common/comm_utils.h"
 #include "common/comm_channel.h"
 #include "common/comm_connectivity.h"
