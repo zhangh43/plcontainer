@@ -51,19 +51,19 @@ PG_FUNCTION_INFO_V1(plcontainer_call_handler);
 /*
  * Currently active plpython function
  */
-//static PLyProcedure *PLy_curr_procedure = NULL;
+static plcProcInfo *PLy_curr_procedure = NULL;
 
 
 static plcProcResult *plcontainer_get_result(FunctionCallInfo fcinfo,
-                                             plcProcInfo *pinfo);
+                                             plcProcInfo *proc);
 
 static Datum plcontainer_process_result(FunctionCallInfo fcinfo,
-                                        plcProcInfo *pinfo,
+                                        plcProcInfo *proc,
                                         plcProcResult *presult);
 
 static void plcontainer_process_exception(plcMsgError *msg);
 
-static void plcontainer_process_sql(plcMsgSQL *msg, plcConn *conn, plcProcInfo *pinfo);
+static void plcontainer_process_sql(plcMsgSQL *msg, plcConn *conn, plcProcInfo *proc);
 
 static void plcontainer_process_log(plcMsgLog *log);
 
@@ -99,6 +99,8 @@ _PG_init(void) {
 Datum plcontainer_call_handler(PG_FUNCTION_ARGS) {
 	Datum datumreturn = (Datum) 0;
 	int ret;
+	plcProcInfo *save_curr_proc;
+	ErrorContextCallback plerrcontext;
 
 	/* TODO: handle trigger requests as well */
 	if (CALLED_AS_TRIGGER(fcinfo)) {
@@ -116,13 +118,26 @@ Datum plcontainer_call_handler(PG_FUNCTION_ARGS) {
 		plc_elog(ERROR, "[plcontainer] SPI connect error: %d (%s)", ret,
 		     SPI_result_code_string(ret));
 
+	//TODO
+	//pyelog(LOG, "Entering call handler with  PLy_curr_procedure: %p",
+	//		PLy_curr_procedure);
+
+	save_curr_proc = PLy_curr_procedure;
+
+	/*
+	 * Setup error traceback support for ereport()
+	 */
+	plerrcontext.callback = plpython_error_callback;
+	plerrcontext.previous = error_context_stack;
+	error_context_stack = &plerrcontext;
+
 	/* We need to cover this in try-catch block to catch the even of user
 	 * requesting the query termination. In this case we should forcefully
 	 * kill the container and reset its information
 	 */
 	PG_TRY();
 	{
-		plcProcInfo *pinfo;
+		plcProcInfo *proc;
 		bool bFirstTimeCall = true;
 		FuncCallContext * volatile funcctx = NULL;
 		MemoryContext oldcontext = NULL;
@@ -132,7 +147,12 @@ Datum plcontainer_call_handler(PG_FUNCTION_ARGS) {
 		fcinfo->isnull = true;
 
 		/* Get procedure info from cache or compose it based on catalog */
-		pinfo = get_proc_info(fcinfo);
+		proc = get_proc_info(fcinfo);
+
+		//TODO:pyelog(LOG, "Calling python proc @ address: %p", proc);
+		PLy_curr_procedure = proc;
+
+		//retval = plcontainer_function_handler(fcinfo, proc);
 
 		/* If we have a set-retuning function */
 		if (fcinfo->flinfo->fn_retset) {
@@ -155,7 +175,7 @@ Datum plcontainer_call_handler(PG_FUNCTION_ARGS) {
 
 		/* First time call for SRF or just a call of scalar function */
 		if (bFirstTimeCall) {
-			presult = plcontainer_get_result(fcinfo, pinfo);
+			presult = plcontainer_get_result(fcinfo, proc);
 			if (fcinfo->flinfo->fn_retset) {
 				funcctx->user_fctx = (void *) presult;
 			}
@@ -172,7 +192,7 @@ Datum plcontainer_call_handler(PG_FUNCTION_ARGS) {
 		}
 
 		/* Process the result message from client */
-		datumreturn = plcontainer_process_result(fcinfo, pinfo, presult);
+		datumreturn = plcontainer_process_result(fcinfo, proc, presult);
 
 		presult->resrow += 1;
 		MemoryContextSwitchTo(oldcontext);
@@ -199,7 +219,7 @@ Datum plcontainer_call_handler(PG_FUNCTION_ARGS) {
 			delete_containers();
 			DeleteBackendsWhenError = false;
 		}
-
+		PLy_curr_procedure = save_curr_proc;
 		PG_RE_THROW();
 	}
 	PG_END_TRY();
@@ -217,7 +237,7 @@ Datum plcontainer_call_handler(PG_FUNCTION_ARGS) {
 }
 
 static plcProcResult *plcontainer_get_result(FunctionCallInfo fcinfo,
-                                             plcProcInfo *pinfo) {
+                                             plcProcInfo *proc) {
 	char *runtime_id;
 	plcConn *conn;
 	int message_type;
@@ -230,7 +250,7 @@ static plcProcResult *plcontainer_get_result(FunctionCallInfo fcinfo,
 		runtimeConfEntry *runtime_conf_entry = NULL;
 		result = NULL;
 
-		req = plcontainer_create_call(fcinfo, pinfo);
+		req = plcontainer_create_call(fcinfo, proc);
 		runtime_id = parse_container_meta(req->proc.src);
 		
 		runtime_conf_entry = plc_get_runtime_configuration(runtime_id);
@@ -300,7 +320,7 @@ static plcProcResult *plcontainer_get_result(FunctionCallInfo fcinfo,
 						plcontainer_process_exception((plcMsgError *) answer);
 						break;
 					case MT_SQL:
-						plcontainer_process_sql((plcMsgSQL *) answer, conn, pinfo);
+						plcontainer_process_sql((plcMsgSQL *) answer, conn, proc);
 						break;
 					case MT_LOG:
 						plcontainer_process_log((plcMsgLog *) answer);
@@ -347,7 +367,7 @@ static plcProcResult *plcontainer_get_result(FunctionCallInfo fcinfo,
  * Processing client results message
  */
 static Datum plcontainer_process_result(FunctionCallInfo fcinfo,
-                                        plcProcInfo *pinfo,
+                                        plcProcInfo *proc,
                                         plcProcResult *presult) {
 	Datum result = (Datum) 0;
 	plcMsgResult *resmsg = presult->resmsg;
@@ -371,7 +391,7 @@ static Datum plcontainer_process_result(FunctionCallInfo fcinfo,
 
 	if (resmsg->data[presult->resrow][0].isnull == 0) {
 		fcinfo->isnull = false;
-		result = pinfo->rettype.infunc(resmsg->data[presult->resrow][0].value, &pinfo->rettype);
+		result = proc->rettype.infunc(resmsg->data[presult->resrow][0].value, &proc->rettype);
 	}
 
 	return result;
@@ -391,7 +411,7 @@ static void plcontainer_process_log(plcMsgLog *log) {
 /*
  * Processing client SQL query message
  */
-static void plcontainer_process_sql(plcMsgSQL *msg, plcConn *conn, plcProcInfo *pinfo) {
+static void plcontainer_process_sql(plcMsgSQL *msg, plcConn *conn, plcProcInfo *proc) {
 	plcMessage *res;
 	volatile MemoryContext oldcontext;
 	volatile ResourceOwner oldowner;
@@ -400,7 +420,7 @@ static void plcontainer_process_sql(plcMsgSQL *msg, plcConn *conn, plcProcInfo *
 	oldcontext = CurrentMemoryContext;
 	oldowner = CurrentResourceOwner;
 
-	res = handle_sql_message(msg, conn, pinfo);
+	res = handle_sql_message(msg, conn, proc);
 	if (res != NULL) {
 		retval = plcontainer_channel_send(conn, res);
 		if (retval < 0) {
