@@ -116,76 +116,6 @@ plpython_return_error_callback(pg_attribute_unused() void *arg)
 }
 
 
-static Datum plcontainer_call_hook(PG_FUNCTION_ARGS) {
-	Datum result = (Datum) 0;
-	plcProcInfo *pinfo;
-	bool bFirstTimeCall = true;
-	FuncCallContext *volatile funcctx = NULL;
-	MemoryContext oldcontext = NULL;
-	plcProcResult *presult = NULL;
-
-	/* By default we return NULL */
-	fcinfo->isnull = true;
-
-	/* Get procedure info from cache or compose it based on catalog */
-	pinfo = get_proc_info(fcinfo);
-
-	/* If we have a set-retuning function */
-	if (fcinfo->flinfo->fn_retset) {
-		/* First Call setup */
-		if (SRF_IS_FIRSTCALL()) {
-			funcctx = SRF_FIRSTCALL_INIT();
-		} else {
-			bFirstTimeCall = false;
-		}
-
-		/* Every call setup */
-		funcctx = SRF_PERCALL_SETUP();
-		Assert(funcctx != NULL);
-
-		/* SRF initializes special context shared between function calls */
-		oldcontext = MemoryContextSwitchTo(funcctx->multi_call_memory_ctx);
-	} else {
-		oldcontext = MemoryContextSwitchTo(pl_container_caller_context);
-	}
-
-	/* First time call for SRF or just a call of scalar function */
-	if (bFirstTimeCall) {
-		presult = plcontainer_get_result(fcinfo, pinfo);
-		if (fcinfo->flinfo->fn_retset) {
-			funcctx->user_fctx = (void *) presult;
-		}
-	} else {
-		presult = (plcProcResult *) funcctx->user_fctx;
-	}
-
-	/* If we processed all the rows or the function returned 0 rows we can return immediately */
-	if (presult->resrow >= presult->resmsg->rows) {
-		free_result(presult->resmsg, false);
-		pfree(presult);
-		MemoryContextSwitchTo(oldcontext);
-		SRF_RETURN_DONE(funcctx);
-	}
-
-	/* Process the result message from client */
-	result = plcontainer_process_result(fcinfo, pinfo, presult);
-
-	presult->resrow += 1;
-	MemoryContextSwitchTo(oldcontext);
-
-	if (fcinfo->flinfo->fn_retset) {
-		SRF_RETURN_NEXT(funcctx, result);
-	} else {
-		free_result(presult->resmsg, false);
-		pfree(presult);
-	}
-#ifndef PLC_PG
-	SIMPLE_FAULT_NAME_INJECTOR("plcontainer_before_udf_finish");
-#endif
-	return result;
-}
-
-
 Datum plcontainer_call_handler(PG_FUNCTION_ARGS) {
 	Datum datumreturn = (Datum) 0;
 	int ret;
@@ -241,7 +171,6 @@ Datum plcontainer_call_handler(PG_FUNCTION_ARGS) {
 
 		datumreturn = plcontainer_function_handler(fcinfo, proc);
 
-		datumreturn = plcontainer_call_hook(fcinfo);
 
 	}
 	PG_CATCH();
@@ -568,6 +497,10 @@ plcontainer_function_handler(FunctionCallInfo fcinfo, plcProcInfo *proc)
 		/* First time call for SRF or just a call of scalar function */
 		if (!fcinfo->flinfo->fn_retset || bFirstTimeCall) {
 			presult = plcontainer_get_result(fcinfo, proc);
+			if (fcinfo->flinfo->fn_retset) {
+						funcctx->user_fctx = (void *) presult;
+					}
+
 			if (!fcinfo->flinfo->fn_retset) {
 				/*
 				 * SETOF function parameters will be deleted when last row is
@@ -576,17 +509,18 @@ plcontainer_function_handler(FunctionCallInfo fcinfo, plcProcInfo *proc)
 				//TODOPLy_function_delete_args(proc);
 			}
 		} else {
-
+			// setof && not firsttime
+			presult = (plcProcResult *) funcctx->user_fctx;
 		}
 
 		if (fcinfo->flinfo->fn_retset) {
-			ReturnSetInfo *rsi = (ReturnSetInfo *) fcinfo->resultinfo;
+			//ReturnSetInfo *rsi = (ReturnSetInfo *) fcinfo->resultinfo;
 
-			if (funcctx->user_fctx == NULL) {
+			//if (funcctx->user_fctx == NULL) {
 				//pyelog(INFO, "first time call, preparing the result set...");
 
 				/* first time -- do checks and setup */
-				if (!rsi || !IsA(rsi, ReturnSetInfo)
+				/*if (!rsi || !IsA(rsi, ReturnSetInfo)
 						|| (rsi->allowedModes & SFRM_ValuePerCall) == 0) {
 					ereport(ERROR,
 							(errcode(ERRCODE_FEATURE_NOT_SUPPORTED), errmsg(
@@ -602,11 +536,19 @@ plcontainer_function_handler(FunctionCallInfo fcinfo, plcProcInfo *proc)
 							(errcode(ERRCODE_DATATYPE_MISMATCH), errmsg(
 									"returned object cannot be iterated"), errdetail(
 									"PL/Python set-returning functions must return an iterable object.")));
-			}
+			}*/
 
-			presult = (plcProcResult *) funcctx->user_fctx;
+			//presult = (plcProcResult *) funcctx->user_fctx;
 
-			if (presult->resrow < presult->resmsg->rows)
+			if (presult->resrow >= presult->resmsg->rows) {
+					free_result(presult->resmsg, false);
+					pfree(presult);
+					MemoryContextSwitchTo(oldcontext);
+					SRF_RETURN_DONE(funcctx);
+				}
+
+
+			/*if (presult->resrow < presult->resmsg->rows)
 				rsi->isDone = ExprMultipleResult;
 			else {
 				rsi->isDone = ExprEndResult;
@@ -624,12 +566,8 @@ plcontainer_function_handler(FunctionCallInfo fcinfo, plcProcInfo *proc)
 				//TODOPLy_function_delete_args(proc);
 
 
-				/* TODO Disconnect from the SPI manager before returning */
-				//if (SPI_finish() != SPI_OK_FINISH)
-				//	elog(ERROR, "SPI_finish failed");
-
 				SRF_RETURN_DONE(funcctx);
-			}
+			}*/
 		}
 
 		/* TODO
@@ -641,9 +579,9 @@ plcontainer_function_handler(FunctionCallInfo fcinfo, plcProcInfo *proc)
 		//if (SPI_finish() != SPI_OK_FINISH)
 		//	elog(ERROR, "SPI_finish failed");
 
-		plerrcontext.callback = plpython_return_error_callback;
-		plerrcontext.previous = error_context_stack;
-		error_context_stack = &plerrcontext;
+		//plerrcontext.callback = plpython_return_error_callback;
+		//plerrcontext.previous = error_context_stack;
+		//error_context_stack = &plerrcontext;
 
 
 		/* Process the result message from client */
@@ -672,7 +610,7 @@ plcontainer_function_handler(FunctionCallInfo fcinfo, plcProcInfo *proc)
 	}
 	PG_END_TRY();
 
-	error_context_stack = plerrcontext.previous;
+	//error_context_stack = plerrcontext.previous;
 
 	if (fcinfo->flinfo->fn_retset) {
 		SRF_RETURN_NEXT(funcctx, datumreturn);
