@@ -13,14 +13,14 @@
 #include "utils/memutils.h"
 #include "utils/palloc.h"
 
-void *plc_top_alloc(size_t bytes) {
+void *PLy_malloc(size_t bytes) {
 	/* We need our allocations to be long-lived, so use TopMemoryContext */
 	return MemoryContextAlloc(TopMemoryContext, bytes);
 }
 
 char *plc_top_strdup(char *str) {
 	int len = strlen(str);
-	char *out = plc_top_alloc(len + 1);
+	char *out = PLy_malloc(len + 1);
 	memcpy(out, str, len);
 	out[len] = '\0';
 	return out;

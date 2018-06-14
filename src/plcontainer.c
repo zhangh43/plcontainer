@@ -48,12 +48,6 @@ PG_MODULE_MAGIC;
 PG_FUNCTION_INFO_V1(plcontainer_call_handler);
 
 
-/*
- * Currently active plpython function
- */
-static plcProcInfo *PLy_curr_procedure = NULL;
-
-
 static plcProcResult *plcontainer_get_result(FunctionCallInfo fcinfo,
                                              plcProcInfo *proc);
 
@@ -66,6 +60,15 @@ static void plcontainer_process_exception(plcMsgError *msg);
 static void plcontainer_process_sql(plcMsgSQL *msg, plcConn *conn, plcProcInfo *proc);
 
 static void plcontainer_process_log(plcMsgLog *log);
+
+/* Get the innermost python procedure called from the backend */
+static char *PLy_procedure_name(PLyProcedure *);
+
+
+/*
+ * Currently active plpython function
+ */
+static plcProcInfo *PLy_curr_procedure = NULL;
 
 static volatile bool DeleteBackendsWhenError;
 
@@ -95,6 +98,15 @@ _PG_init(void) {
 	explicit_subtransactions = NIL;
 	inited = true;
 }
+
+static void
+plpython_error_callback(void *arg)
+{
+	if (PLy_curr_procedure)
+		errcontext("PL/Python function \"%s\"",
+				   PLy_procedure_name(PLy_curr_procedure));
+}
+
 
 Datum plcontainer_call_handler(PG_FUNCTION_ARGS) {
 	Datum datumreturn = (Datum) 0;
@@ -391,7 +403,7 @@ static Datum plcontainer_process_result(FunctionCallInfo fcinfo,
 
 	if (resmsg->data[presult->resrow][0].isnull == 0) {
 		fcinfo->isnull = false;
-		result = proc->rettype.infunc(resmsg->data[presult->resrow][0].value, &proc->rettype);
+		result = proc->result.infunc(resmsg->data[presult->resrow][0].value, &proc->result);
 	}
 
 	return result;
@@ -470,3 +482,21 @@ static void plcontainer_process_exception(plcMsgError *msg) {
 	}
 	free_error(msg);
 }
+
+
+/*
+ * Get the name of the last procedure called by the backend (the
+ * innermost, if a plpython procedure call calls the backend and the
+ * backend calls another plpython procedure).
+ *
+ * NB: this returns the SQL name, not the internal Python procedure name
+ */
+static char *
+PLy_procedure_name(plcProcInfo *proc)
+{
+	if (proc == NULL)
+		return "<unknown procedure>";
+	return proc->proname;
+}
+
+

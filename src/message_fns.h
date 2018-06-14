@@ -48,7 +48,7 @@ typedef struct {
 	char *name;
 	char *src;
 	int hasChanged; /* Whether the function has changed since last call */
-	plcTypeInfo rettype;
+	plcTypeInfo result;
 	int retset;
 	int nargs;
 	char **argnames;

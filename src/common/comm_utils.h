@@ -140,7 +140,7 @@ int sanity_check_client(void);
 #define pmalloc palloc
 
 /* pfree & pstrdup are already defined by postgres */
-void *plc_top_alloc(size_t bytes);
+void *PLy_malloc(size_t bytes);
 
 char *plc_top_strdup(char *str);
 
