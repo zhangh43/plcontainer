@@ -47,6 +47,14 @@ PG_MODULE_MAGIC;
 
 PG_FUNCTION_INFO_V1(plcontainer_call_handler);
 
+
+/*
+ * Currently active plpython function
+ */
+//static PLyProcedure *PLy_curr_procedure = NULL;
+
+
+
 static Datum plcontainer_call_hook(PG_FUNCTION_ARGS);
 
 static plcProcResult *plcontainer_get_result(FunctionCallInfo fcinfo,
@@ -117,6 +125,70 @@ Datum plcontainer_call_handler(PG_FUNCTION_ARGS) {
 	 */
 	PG_TRY();
 	{
+		plcProcInfo *pinfo;
+		bool bFirstTimeCall = true;
+		FuncCallContext * volatile funcctx = NULL;
+		MemoryContext oldcontext = NULL;
+		plcProcResult *presult = NULL;
+
+		/* By default we return NULL */
+		fcinfo->isnull = true;
+
+		/* Get procedure info from cache or compose it based on catalog */
+		pinfo = get_proc_info(fcinfo);
+
+		/* If we have a set-retuning function */
+		if (fcinfo->flinfo->fn_retset) {
+			/* First Call setup */
+			if (SRF_IS_FIRSTCALL()) {
+				funcctx = SRF_FIRSTCALL_INIT();
+			} else {
+				bFirstTimeCall = false;
+			}
+
+			/* Every call setup */
+			funcctx = SRF_PERCALL_SETUP();
+			Assert(funcctx != NULL);
+
+			/* SRF initializes special context shared between function calls */
+			oldcontext = MemoryContextSwitchTo(funcctx->multi_call_memory_ctx);
+		} else {
+			oldcontext = MemoryContextSwitchTo(pl_container_caller_context);
+		}
+
+		/* First time call for SRF or just a call of scalar function */
+		if (bFirstTimeCall) {
+			presult = plcontainer_get_result(fcinfo, pinfo);
+			if (fcinfo->flinfo->fn_retset) {
+				funcctx->user_fctx = (void *) presult;
+			}
+		} else {
+			presult = (plcProcResult *) funcctx->user_fctx;
+		}
+
+		/* If we processed all the rows or the function returned 0 rows we can return immediately */
+		if (presult->resrow >= presult->resmsg->rows) {
+			free_result(presult->resmsg, false);
+			pfree(presult);
+			MemoryContextSwitchTo(oldcontext);
+			SRF_RETURN_DONE(funcctx);
+		}
+
+		/* Process the result message from client */
+		datumreturn = plcontainer_process_result(fcinfo, pinfo, presult);
+
+		presult->resrow += 1;
+		MemoryContextSwitchTo(oldcontext);
+
+		if (fcinfo->flinfo->fn_retset) {
+			SRF_RETURN_NEXT(funcctx, result);
+		} else {
+			free_result(presult->resmsg, false);
+			pfree(presult);
+		}
+#ifndef PLC_PG
+		SIMPLE_FAULT_NAME_INJECTOR("plcontainer_before_udf_finish");
+#endif
 		datumreturn = plcontainer_call_hook(fcinfo);
 	}
 	PG_CATCH();
@@ -148,72 +220,7 @@ Datum plcontainer_call_handler(PG_FUNCTION_ARGS) {
 }
 
 static Datum plcontainer_call_hook(PG_FUNCTION_ARGS) {
-	Datum result = (Datum) 0;
-	plcProcInfo *pinfo;
-	bool bFirstTimeCall = true;
-	FuncCallContext *volatile funcctx = NULL;
-	MemoryContext oldcontext = NULL;
-	plcProcResult *presult = NULL;
 
-	/* By default we return NULL */
-	fcinfo->isnull = true;
-
-	/* Get procedure info from cache or compose it based on catalog */
-	pinfo = get_proc_info(fcinfo);
-
-	/* If we have a set-retuning function */
-	if (fcinfo->flinfo->fn_retset) {
-		/* First Call setup */
-		if (SRF_IS_FIRSTCALL()) {
-			funcctx = SRF_FIRSTCALL_INIT();
-		} else {
-			bFirstTimeCall = false;
-		}
-
-		/* Every call setup */
-		funcctx = SRF_PERCALL_SETUP();
-		Assert(funcctx != NULL);
-
-		/* SRF initializes special context shared between function calls */
-		oldcontext = MemoryContextSwitchTo(funcctx->multi_call_memory_ctx);
-	} else {
-		oldcontext = MemoryContextSwitchTo(pl_container_caller_context);
-	}
-
-	/* First time call for SRF or just a call of scalar function */
-	if (bFirstTimeCall) {
-		presult = plcontainer_get_result(fcinfo, pinfo);
-		if (fcinfo->flinfo->fn_retset) {
-			funcctx->user_fctx = (void *) presult;
-		}
-	} else {
-		presult = (plcProcResult *) funcctx->user_fctx;
-	}
-
-	/* If we processed all the rows or the function returned 0 rows we can return immediately */
-	if (presult->resrow >= presult->resmsg->rows) {
-		free_result(presult->resmsg, false);
-		pfree(presult);
-		MemoryContextSwitchTo(oldcontext);
-		SRF_RETURN_DONE(funcctx);
-	}
-
-	/* Process the result message from client */
-	result = plcontainer_process_result(fcinfo, pinfo, presult);
-
-	presult->resrow += 1;
-	MemoryContextSwitchTo(oldcontext);
-
-	if (fcinfo->flinfo->fn_retset) {
-		SRF_RETURN_NEXT(funcctx, result);
-	} else {
-		free_result(presult->resmsg, false);
-		pfree(presult);
-	}
-#ifndef PLC_PG	
-	SIMPLE_FAULT_NAME_INJECTOR("plcontainer_before_udf_finish");
-#endif
-	return result;
 }
 
 static plcProcResult *plcontainer_get_result(FunctionCallInfo fcinfo,
