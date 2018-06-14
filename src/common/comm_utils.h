@@ -144,6 +144,8 @@ void *PLy_malloc(size_t bytes);
 
 char *plc_top_strdup(char *str);
 
+char *PLy_strdup(const char *);
+
 #endif /* PLC_CLIENT */
 
 #endif /* PLC_COMM_UTILS_H */

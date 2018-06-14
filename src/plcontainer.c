@@ -458,10 +458,9 @@ plcontainer_function_handler(FunctionCallInfo fcinfo, plcProcInfo *proc)
 	plcProcResult *presult = NULL;
 
 	MemoryContext oldcontext = CurrentMemoryContext;
-	Datum						rv;
+
 	FuncCallContext	*volatile	funcctx		   = NULL;
-	PyObject 		*volatile	plargs		   = NULL;
-	PyObject		*volatile	plrv		   = NULL;
+
 	bool						bFirstTimeCall = false;
 	ErrorContextCallback		plerrcontext;
 
@@ -482,7 +481,7 @@ plcontainer_function_handler(FunctionCallInfo fcinfo, plcProcInfo *proc)
 
 			/* Every call setup */
 			funcctx = SRF_PERCALL_SETUP();
-			pyelog(INFO, "The funcctx pointer returned by SRF_PERCALL_SETUP() is: %p", funcctx);
+			//pyelog(INFO, "The funcctx pointer returned by SRF_PERCALL_SETUP() is: %p", funcctx);
 
 			Assert(funcctx != NULL);
 			/* SRF initializes special context shared between function calls */

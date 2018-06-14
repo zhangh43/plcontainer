@@ -108,7 +108,7 @@ plcProcInfo *plcontainer_procedure_get(FunctionCallInfo fcinfo) {
 
 		procStruct = (Form_pg_proc) GETSTRUCT(procHeapTup);
 		rv = snprintf(procName, sizeof(procName), "__plpython_procedure_%s_%u",
-				NameStr(procStruct->proname), fn_oid);
+				NameStr(procStruct->proname), procoid/*TODOfn_oid*/);
 		if (rv < 0 || (unsigned int)rv >= sizeof(procName))
 			elog(ERROR, "procedure name would overrun buffer");
 
