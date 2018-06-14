@@ -109,7 +109,7 @@ extern int is_write_log(int elevel, int log_min_level);
 
 void *pmalloc(size_t size);
 
-#define plc_top_alloc pmalloc
+#define PLy_malloc pmalloc
 #define pfree free
 #define pstrdup strdup
 #define plc_top_strdup strdup
