@@ -190,11 +190,11 @@ Datum plcontainer_call_handler(PG_FUNCTION_ARGS) {
 	 *  TODO: SPI_finish() will switch back the memory context. Upstream code place it at earlier
 	 *  part of code, we'd better find the right place for it in plcontainer.
 	 */
-	/*ret = SPI_finish();
+	ret = SPI_finish();
 	if (ret != SPI_OK_FINISH)
 		plc_elog(ERROR, "[plcontainer] SPI finish error: %d (%s)", ret,
 		     SPI_result_code_string(ret));
-*/
+
 	return datumreturn;
 }
 
@@ -550,22 +550,22 @@ plcontainer_function_handler(FunctionCallInfo fcinfo, plcProcInfo *proc)
 				//TODOPLy_function_delete_args(proc);
 
 
-				/* Disconnect from the SPI manager before returning */
-				if (SPI_finish() != SPI_OK_FINISH)
-					elog(ERROR, "SPI_finish failed");
+				/* TODO Disconnect from the SPI manager before returning */
+				//if (SPI_finish() != SPI_OK_FINISH)
+				//	elog(ERROR, "SPI_finish failed");
 
 				SRF_RETURN_DONE(funcctx);
 			}
 		}
 
-		/*
+		/* TODO
 		 * Disconnect from SPI manager and then create the return values datum
 		 * (if the input function does a palloc for it this must not be
 		 * allocated in the SPI memory context because SPI_finish would free
 		 * it).
 		 */
-		if (SPI_finish() != SPI_OK_FINISH)
-			elog(ERROR, "SPI_finish failed");
+		//if (SPI_finish() != SPI_OK_FINISH)
+		//	elog(ERROR, "SPI_finish failed");
 
 		plerrcontext.callback = plpython_return_error_callback;
 		plerrcontext.previous = error_context_stack;
