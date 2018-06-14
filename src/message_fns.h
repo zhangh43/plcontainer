@@ -58,10 +58,10 @@ typedef struct {
 	bool fn_readonly;
 } plcProcInfo;
 
-plcProcInfo *get_proc_info(FunctionCallInfo fcinfo);
+plcProcInfo *plcontainer_procedure_get(FunctionCallInfo fcinfo);
 
 void free_proc_info(plcProcInfo *proc);
 
-plcMsgCallreq *plcontainer_create_call(FunctionCallInfo fcinfo, plcProcInfo *pinfo);
+plcMsgCallreq *plcontainer_generate_call_request(FunctionCallInfo fcinfo, plcProcInfo *pinfo);
 
 #endif /* PLC_MESSAGE_FNS_H */

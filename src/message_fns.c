@@ -71,7 +71,7 @@ static bool plc_type_valid(plcTypeInfo *type);
 
 static void fill_callreq_arguments(FunctionCallInfo fcinfo, plcProcInfo *proc, plcMsgCallreq *req);
 
-plcProcInfo *get_proc_info(FunctionCallInfo fcinfo) {
+plcProcInfo *plcontainer_procedure_get(FunctionCallInfo fcinfo) {
 	int lenOfArgnames;
 	Datum *argnames = NULL;
 	bool *argnulls = NULL;
@@ -150,7 +150,7 @@ plcProcInfo *get_proc_info(FunctionCallInfo fcinfo) {
 		proc->hasChanged = 1;
 
 		procStruct = (Form_pg_proc) GETSTRUCT(procHeapTup);
-		fill_type_info(fcinfo, procStruct->prorettype, &proc->rettype);
+		fill_type_info(fcinfo, procStruct->prorettype, &proc->result);
 
 		proc->nargs = procStruct->pronargs;
 		if (proc->nargs > 0) {
@@ -242,7 +242,7 @@ void free_proc_info(plcProcInfo *proc) {
 	pfree(proc);
 }
 
-plcMsgCallreq *plcontainer_create_call(FunctionCallInfo fcinfo, plcProcInfo *proc) {
+plcMsgCallreq *plcontainer_generate_call_request(FunctionCallInfo fcinfo, plcProcInfo *proc) {
 	plcMsgCallreq *req;
 
 	req = pmalloc(sizeof(plcMsgCallreq));
