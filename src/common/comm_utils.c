@@ -18,7 +18,7 @@ void *PLy_malloc(size_t bytes) {
 	return MemoryContextAlloc(TopMemoryContext, bytes);
 }
 
-static char *
+char *
 PLy_strdup(const char *str)
 {
 	char	   *result;
