@@ -579,9 +579,9 @@ plcontainer_function_handler(FunctionCallInfo fcinfo, plcProcInfo *proc)
 		//if (SPI_finish() != SPI_OK_FINISH)
 		//	elog(ERROR, "SPI_finish failed");
 
-		//plerrcontext.callback = plpython_return_error_callback;
-		//plerrcontext.previous = error_context_stack;
-		//error_context_stack = &plerrcontext;
+		plerrcontext.callback = plpython_return_error_callback;
+		plerrcontext.previous = error_context_stack;
+		error_context_stack = &plerrcontext;
 
 
 		/* Process the result message from client */
@@ -610,7 +610,7 @@ plcontainer_function_handler(FunctionCallInfo fcinfo, plcProcInfo *proc)
 	}
 	PG_END_TRY();
 
-	//error_context_stack = plerrcontext.previous;
+	error_context_stack = plerrcontext.previous;
 
 	if (fcinfo->flinfo->fn_retset) {
 		SRF_RETURN_NEXT(funcctx, datumreturn);
