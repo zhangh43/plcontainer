@@ -54,9 +54,6 @@ PG_FUNCTION_INFO_V1(plcontainer_call_handler);
 //static PLyProcedure *PLy_curr_procedure = NULL;
 
 
-
-static Datum plcontainer_call_hook(PG_FUNCTION_ARGS);
-
 static plcProcResult *plcontainer_get_result(FunctionCallInfo fcinfo,
                                              plcProcInfo *pinfo);
 
@@ -181,7 +178,7 @@ Datum plcontainer_call_handler(PG_FUNCTION_ARGS) {
 		MemoryContextSwitchTo(oldcontext);
 
 		if (fcinfo->flinfo->fn_retset) {
-			SRF_RETURN_NEXT(funcctx, result);
+			SRF_RETURN_NEXT(funcctx, datumreturn);
 		} else {
 			free_result(presult->resmsg, false);
 			pfree(presult);
@@ -189,7 +186,7 @@ Datum plcontainer_call_handler(PG_FUNCTION_ARGS) {
 #ifndef PLC_PG
 		SIMPLE_FAULT_NAME_INJECTOR("plcontainer_before_udf_finish");
 #endif
-		datumreturn = plcontainer_call_hook(fcinfo);
+		//datumreturn = plcontainer_call_hook(fcinfo);
 	}
 	PG_CATCH();
 	{
@@ -217,10 +214,6 @@ Datum plcontainer_call_handler(PG_FUNCTION_ARGS) {
 		     SPI_result_code_string(ret));
 
 	return datumreturn;
-}
-
-static Datum plcontainer_call_hook(PG_FUNCTION_ARGS) {
-
 }
 
 static plcProcResult *plcontainer_get_result(FunctionCallInfo fcinfo,
