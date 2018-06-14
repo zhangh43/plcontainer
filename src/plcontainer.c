@@ -190,11 +190,11 @@ Datum plcontainer_call_handler(PG_FUNCTION_ARGS) {
 	 *  TODO: SPI_finish() will switch back the memory context. Upstream code place it at earlier
 	 *  part of code, we'd better find the right place for it in plcontainer.
 	 */
-	ret = SPI_finish();
+	/*ret = SPI_finish();
 	if (ret != SPI_OK_FINISH)
 		plc_elog(ERROR, "[plcontainer] SPI finish error: %d (%s)", ret,
 		     SPI_result_code_string(ret));
-
+*/
 	return datumreturn;
 }
 
@@ -457,7 +457,7 @@ plcontainer_function_handler(FunctionCallInfo fcinfo, plcProcInfo *proc)
 	Datum					datumreturn;
 	plcProcResult *presult = NULL;
 
-	MemoryContext oldcontext = CurrentMemoryContext;
+	//MemoryContext oldcontext = CurrentMemoryContext;
 
 	FuncCallContext	*volatile	funcctx		   = NULL;
 
@@ -486,9 +486,9 @@ plcontainer_function_handler(FunctionCallInfo fcinfo, plcProcInfo *proc)
 			Assert(funcctx != NULL);
 			/* SRF initializes special context shared between function calls */
 			//TODO: why plpython not use multi_call_memory_ctx
-			oldcontext = MemoryContextSwitchTo(funcctx->multi_call_memory_ctx);
+			//oldcontext = MemoryContextSwitchTo(funcctx->multi_call_memory_ctx);
 		} else {
-			oldcontext = MemoryContextSwitchTo(pl_container_caller_context);
+			// = MemoryContextSwitchTo(pl_container_caller_context);
 		}
 
 		/* First time call for SRF or just a call of scalar function */
@@ -541,7 +541,7 @@ plcontainer_function_handler(FunctionCallInfo fcinfo, plcProcInfo *proc)
 			if (rsi->isDone == ExprEndResult) {
 				free_result(presult->resmsg, false);
 				pfree(presult);
-				MemoryContextSwitchTo(oldcontext);
+				//MemoryContextSwitchTo(oldcontext);
 
 
 				funcctx->user_fctx = NULL;
@@ -575,7 +575,7 @@ plcontainer_function_handler(FunctionCallInfo fcinfo, plcProcInfo *proc)
 		/* Process the result message from client */
 		datumreturn = plcontainer_process_result(fcinfo, proc, presult);
 		presult->resrow += 1;
-		MemoryContextSwitchTo(oldcontext);
+		//MemoryContextSwitchTo(oldcontext);
 
 	}
 	PG_CATCH();
@@ -593,7 +593,7 @@ plcontainer_function_handler(FunctionCallInfo fcinfo, plcProcInfo *proc)
 			free_result(presult->resmsg, false);
 			pfree(presult);
 		}
-		MemoryContextSwitchTo(oldcontext);
+		//MemoryContextSwitchTo(oldcontext);
 		PG_RE_THROW();
 	}
 	PG_END_TRY();
