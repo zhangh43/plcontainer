@@ -575,7 +575,7 @@ plcontainer_function_handler(FunctionCallInfo fcinfo, plcProcInfo *proc)
 		/* Process the result message from client */
 		datumreturn = plcontainer_process_result(fcinfo, proc, presult);
 		presult->resrow += 1;
-		//MemoryContextSwitchTo(oldcontext);
+		MemoryContextSwitchTo(oldcontext);
 
 	}
 	PG_CATCH();
