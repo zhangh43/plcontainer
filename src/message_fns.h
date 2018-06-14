@@ -40,6 +40,8 @@ typedef struct {
 } plcProcResult;
 
 typedef struct {
+	char	   *proname;		/* SQL name of procedure */
+	char	   *pyname;			/* Python name of procedure */
 	/* Greenplum Function Information */
 	Oid funcOid;
 	TransactionId fn_xmin; /* Transaction ID that created this function in catalog */

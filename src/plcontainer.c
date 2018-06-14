@@ -62,7 +62,7 @@ static void plcontainer_process_sql(plcMsgSQL *msg, plcConn *conn, plcProcInfo *
 static void plcontainer_process_log(plcMsgLog *log);
 
 /* Get the innermost python procedure called from the backend */
-static char *PLy_procedure_name(PLyProcedure *);
+static char *PLy_procedure_name(plcProcInfo *);
 
 
 /*
@@ -100,7 +100,7 @@ _PG_init(void) {
 }
 
 static void
-plpython_error_callback(void *arg)
+plpython_error_callback(pg_attribute_unused() void *arg)
 {
 	if (PLy_curr_procedure)
 		errcontext("PL/Python function \"%s\"",

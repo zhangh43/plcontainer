@@ -83,7 +83,7 @@ plcProcInfo *get_proc_info(FunctionCallInfo fcinfo) {
 	HeapTuple procHeapTup,
 		textHeapTup = NULL;
 	Form_pg_type typeTup;
-	plcProcInfo *proc = NULL;
+	plcProcInfo * volatile proc = NULL;
 	Form_pg_proc procStruct;
 
 	procoid = fcinfo->flinfo->fn_oid;
@@ -101,7 +101,6 @@ plcProcInfo *get_proc_info(FunctionCallInfo fcinfo) {
 
 		char procName[NAMEDATALEN + 256];
 		Form_pg_proc procStruct;
-		PLyProcedure * volatile proc;
 		char * volatile procSource = NULL;
 		Datum prosrcdatum;
 		bool isnull;
