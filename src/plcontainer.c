@@ -457,7 +457,7 @@ plcontainer_function_handler(FunctionCallInfo fcinfo, plcProcInfo *proc)
 	Datum					datumreturn;
 	plcProcResult *presult = NULL;
 
-	//MemoryContext oldcontext = CurrentMemoryContext;
+	MemoryContext oldcontext = CurrentMemoryContext;
 
 	FuncCallContext	*volatile	funcctx		   = NULL;
 
@@ -486,9 +486,9 @@ plcontainer_function_handler(FunctionCallInfo fcinfo, plcProcInfo *proc)
 			Assert(funcctx != NULL);
 			/* SRF initializes special context shared between function calls */
 			//TODO: why plpython not use multi_call_memory_ctx
-			//oldcontext = MemoryContextSwitchTo(funcctx->multi_call_memory_ctx);
+			oldcontext = MemoryContextSwitchTo(funcctx->multi_call_memory_ctx);
 		} else {
-			// = MemoryContextSwitchTo(pl_container_caller_context);
+			oldcontext = MemoryContextSwitchTo(pl_container_caller_context);
 		}
 
 		/* First time call for SRF or just a call of scalar function */
@@ -541,7 +541,7 @@ plcontainer_function_handler(FunctionCallInfo fcinfo, plcProcInfo *proc)
 			if (rsi->isDone == ExprEndResult) {
 				free_result(presult->resmsg, false);
 				pfree(presult);
-				//MemoryContextSwitchTo(oldcontext);
+				MemoryContextSwitchTo(oldcontext);
 
 
 				funcctx->user_fctx = NULL;
@@ -593,7 +593,7 @@ plcontainer_function_handler(FunctionCallInfo fcinfo, plcProcInfo *proc)
 			free_result(presult->resmsg, false);
 			pfree(presult);
 		}
-		//MemoryContextSwitchTo(oldcontext);
+		MemoryContextSwitchTo(oldcontext);
 		PG_RE_THROW();
 	}
 	PG_END_TRY();
