@@ -514,13 +514,13 @@ plcontainer_function_handler(FunctionCallInfo fcinfo, plcProcInfo *proc)
 		}
 
 		if (fcinfo->flinfo->fn_retset) {
-			ReturnSetInfo *rsi = (ReturnSetInfo *) fcinfo->resultinfo;
+			//ReturnSetInfo *rsi = (ReturnSetInfo *) fcinfo->resultinfo;
 
-			if (funcctx->user_fctx == NULL) {
+			//if (funcctx->user_fctx == NULL) {
 				//pyelog(INFO, "first time call, preparing the result set...");
 
 				/* first time -- do checks and setup */
-				if (!rsi || !IsA(rsi, ReturnSetInfo)
+				/*if (!rsi || !IsA(rsi, ReturnSetInfo)
 						|| (rsi->allowedModes & SFRM_ValuePerCall) == 0) {
 					ereport(ERROR,
 							(errcode(ERRCODE_FEATURE_NOT_SUPPORTED), errmsg(
@@ -529,14 +529,14 @@ plcontainer_function_handler(FunctionCallInfo fcinfo, plcProcInfo *proc)
 				}
 				rsi->returnMode = SFRM_ValuePerCall;
 
-				//funcctx->user_fctx = (void *) presult;
+				funcctx->user_fctx = (void *) presult;
 
-				/*if (funcctx->user_fctx == NULL)
+				if (funcctx->user_fctx == NULL)
 					ereport(ERROR,
 							(errcode(ERRCODE_DATATYPE_MISMATCH), errmsg(
 									"returned object cannot be iterated"), errdetail(
-									"PL/Python set-returning functions must return an iterable object.")));*/
-			}
+									"PL/Python set-returning functions must return an iterable object.")));
+			}*/
 
 			//presult = (plcProcResult *) funcctx->user_fctx;
 
