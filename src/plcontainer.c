@@ -128,7 +128,7 @@ static Datum plcontainer_call_hook(PG_FUNCTION_ARGS) {
 	fcinfo->isnull = true;
 
 	/* Get procedure info from cache or compose it based on catalog */
-	pinfo = get_proc_info(fcinfo);
+	pinfo = plcontainer_procedure_get(fcinfo);
 
 	/* If we have a set-retuning function */
 	if (fcinfo->flinfo->fn_retset) {
@@ -229,17 +229,17 @@ Datum plcontainer_call_handler(PG_FUNCTION_ARGS) {
 	{
 
 
-		plcProcInfo *proc;
+		//plcProcInfo *proc;
 		/*????? By default we return NULL */
-		fcinfo->isnull = true;
+		//fcinfo->isnull = true;
 
 		/* Get procedure info from cache or compose it based on catalog */
-		proc = plcontainer_procedure_get(fcinfo);
+		//proc = plcontainer_procedure_get(fcinfo);
 
 		//TODO:pyelog(LOG, "Calling python proc @ address: %p", proc);
-		PLy_curr_procedure = proc;
+		//PLy_curr_procedure = proc;
 
-		datumreturn = plcontainer_function_handler(fcinfo, proc);
+		//datumreturn = plcontainer_function_handler(fcinfo, proc);
 
 		datumreturn = plcontainer_call_hook(fcinfo);
 
