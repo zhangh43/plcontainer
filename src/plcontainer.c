@@ -189,7 +189,7 @@ static Datum plcontainer_call_hook(PG_FUNCTION_ARGS) {
 Datum plcontainer_call_handler(PG_FUNCTION_ARGS) {
 	Datum datumreturn = (Datum) 0;
 	int ret;
-	plcProcInfo *save_curr_proc;
+	//plcProcInfo *save_curr_proc;
 	ErrorContextCallback plerrcontext;
 
 	/* TODO: handle trigger requests as well */
@@ -212,14 +212,14 @@ Datum plcontainer_call_handler(PG_FUNCTION_ARGS) {
 	//pyelog(LOG, "Entering call handler with  PLy_curr_procedure: %p",
 	//		PLy_curr_procedure);
 
-	save_curr_proc = PLy_curr_procedure;
+	//save_curr_proc = PLy_curr_procedure;
 
 	/*
 	 * Setup error traceback support for ereport()
 	 */
-	plerrcontext.callback = plpython_error_callback;
-	plerrcontext.previous = error_context_stack;
-	error_context_stack = &plerrcontext;
+	//plerrcontext.callback = plpython_error_callback;
+	//plerrcontext.previous = error_context_stack;
+	//error_context_stack = &plerrcontext;
 
 	/* We need to cover this in try-catch block to catch the even of user
 	 * requesting the query termination. In this case we should forcefully
@@ -255,7 +255,7 @@ Datum plcontainer_call_handler(PG_FUNCTION_ARGS) {
 			delete_containers();
 			DeleteBackendsWhenError = false;
 		}
-		PLy_curr_procedure = save_curr_proc;
+		//PLy_curr_procedure = save_curr_proc;
 		PG_RE_THROW();
 	}
 	PG_END_TRY();
