@@ -82,7 +82,7 @@ plcProcInfo *plcontainer_procedure_get(FunctionCallInfo fcinfo) {
 	HeapTuple procHeapTup,
 		textHeapTup = NULL;
 	Form_pg_type typeTup;
-	plcProcInfo * volatile proc = NULL;
+	plcProcInfo * proc = NULL;
 
 
 	procoid = fcinfo->flinfo->fn_oid;
@@ -103,14 +103,14 @@ plcProcInfo *plcontainer_procedure_get(FunctionCallInfo fcinfo) {
 		//char * volatile procSource = NULL;
 		//Datum prosrcdatum;
 		bool isnull;
-		int rv;
+		//int rv;
 
 
 		procStruct = (Form_pg_proc) GETSTRUCT(procHeapTup);
-		rv = snprintf(procName, sizeof(procName), "__plpython_procedure_%s_%u",
-				NameStr(procStruct->proname), procoid/*TODOfn_oid*/);
-		if (rv < 0 || (unsigned int)rv >= sizeof(procName))
-			elog(ERROR, "procedure name would overrun buffer");
+		//rv = snprintf(procName, sizeof(procName), "__plpython_procedure_%s_%u",
+		//		NameStr(procStruct->proname), procoid/*TODOfn_oid*/);
+		//if (rv < 0 || (unsigned int)rv >= sizeof(procName))
+		//	elog(ERROR, "procedure name would overrun buffer");
 
 		/*
 		 * Here we are using plc_top_alloc as the function structure should be
@@ -137,8 +137,8 @@ plcProcInfo *plcontainer_procedure_get(FunctionCallInfo fcinfo) {
 		proc->argnames = NULL;
 		*/
 
-		proc->proname = PLy_strdup(NameStr(procStruct->proname));
-		proc->pyname = PLy_strdup(procName);
+		proc->proname = plc_top_strdup(NameStr(procStruct->proname));
+		proc->pyname = plc_top_strdup(procName);
 		proc->funcOid = procoid;
 		proc->fn_xmin = HeapTupleHeaderGetXmin(procHeapTup->t_data);
 		proc->fn_tid = procHeapTup->t_self;
@@ -149,7 +149,7 @@ plcProcInfo *plcontainer_procedure_get(FunctionCallInfo fcinfo) {
 
 		proc->hasChanged = 1;
 
-		procStruct = (Form_pg_proc) GETSTRUCT(procHeapTup);
+		//procStruct = (Form_pg_proc) GETSTRUCT(procHeapTup);
 		fill_type_info(fcinfo, procStruct->prorettype, &proc->result);
 
 		proc->nargs = procStruct->pronargs;
