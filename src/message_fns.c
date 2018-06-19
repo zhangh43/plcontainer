@@ -74,7 +74,7 @@ static void fill_callreq_arguments(FunctionCallInfo fcinfo, plcProcedure *proc, 
 /*
  * Create a new PLyProcedure structure
  */
-static plcProcedure * plcontainer_procedure_create(HeapTuple procTup, Oid fn_oid);
+static plcProcedure * plcontainer_procedure_create(FunctionCallInfo fcinfo, HeapTuple procTup, Oid fn_oid);
 
 plcProcedure *plcontainer_procedure_get(FunctionCallInfo fcinfo) {
 	Oid fn_oid;
@@ -97,7 +97,7 @@ plcProcedure *plcontainer_procedure_get(FunctionCallInfo fcinfo) {
 	 * information has changed in the catalog
 	 */
 	if (!plc_procedure_valid(proc, procTup)) {
-		proc = plcontainer_procedure_create(procTup, fn_oid);
+		proc = plcontainer_procedure_create(fcinfo, procTup, fn_oid);
 	} else {
 		proc->hasChanged = 0;
 	}
@@ -109,7 +109,7 @@ plcProcedure *plcontainer_procedure_get(FunctionCallInfo fcinfo) {
  * Create a new PLyProcedure structure
  */
 static plcProcedure *
-plcontainer_procedure_create(HeapTuple procTup, Oid fn_oid) {
+plcontainer_procedure_create(FunctionCallInfo fcinfo, HeapTuple procTup, Oid fn_oid) {
 
 	plcProcedure * volatile proc = NULL;
 	int lenOfArgnames;
@@ -143,13 +143,13 @@ plcontainer_procedure_create(HeapTuple procTup, Oid fn_oid) {
 
 	proc->proname = PLy_strdup(NameStr(procStruct->proname));
 	proc->pyname = PLy_strdup(procName);
-	proc->funcOid = procoid;
+	proc->funcOid = fn_oid;
 	proc->fn_xmin = HeapTupleHeaderGetXmin(procTup->t_data);
 	proc->fn_tid = procTup->t_self;
 	/* Remember if function is STABLE/IMMUTABLE */
 	proc->fn_readonly = (procStruct->provolatile != PROVOLATILE_VOLATILE);
 
-	proc->retset = 1;//TODO:fcinfo->flinfo->fn_retset;
+	proc->retset = fcinfo->flinfo->fn_retset;
 
 	proc->hasChanged = 1;
 
