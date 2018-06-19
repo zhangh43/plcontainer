@@ -59,12 +59,12 @@ typedef struct {
 	int retset;
 	Oid funcOid;
 
-} plcProcInfo;
+} plcProcedure;
 
-plcProcInfo *plcontainer_procedure_get(FunctionCallInfo fcinfo);
+plcProcedure *plcontainer_procedure_get(FunctionCallInfo fcinfo);
 
-void free_proc_info(plcProcInfo *proc);
+void free_proc_info(plcProcedure *proc);
 
-plcMsgCallreq *plcontainer_generate_call_request(FunctionCallInfo fcinfo, plcProcInfo *pinfo);
+plcMsgCallreq *plcontainer_generate_call_request(FunctionCallInfo fcinfo, plcProcedure *pinfo);
 
 #endif /* PLC_MESSAGE_FNS_H */

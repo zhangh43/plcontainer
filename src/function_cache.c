@@ -17,12 +17,12 @@
 
 #include "message_fns.h"
 
-static plcProcInfo *plcFunctionCache[PLC_FUNCTION_CACHE_SIZE];
+static plcProcedure *plcFunctionCache[PLC_FUNCTION_CACHE_SIZE];
 static int plcFunctionCacheInitialized = 0;
 
 /* Move up the cache item */
 void function_cache_up(int index) {
-	plcProcInfo *tmp;
+	plcProcedure *tmp;
 	int i;
 	if (index > 0) {
 		tmp = plcFunctionCache[index];
@@ -33,9 +33,9 @@ void function_cache_up(int index) {
 	}
 }
 
-plcProcInfo *function_cache_get(Oid funcOid) {
+plcProcedure *function_cache_get(Oid funcOid) {
 	int i;
-	plcProcInfo *resFunc = NULL;
+	plcProcedure *resFunc = NULL;
 	/* Initialize all the elements with nulls initially */
 	if (!plcFunctionCacheInitialized) {
 		for (i = 0; i < PLC_FUNCTION_CACHE_SIZE; i++) {
@@ -54,9 +54,9 @@ plcProcInfo *function_cache_get(Oid funcOid) {
 	return resFunc;
 }
 
-void function_cache_put(plcProcInfo *func) {
+void function_cache_put(plcProcedure *func) {
 	int i;
-	plcProcInfo *oldFunc;
+	plcProcedure *oldFunc;
 	oldFunc = function_cache_get(func->funcOid);
 	/* If the function is not cached already */
 	if (oldFunc == NULL) {

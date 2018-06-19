@@ -47,18 +47,18 @@ PG_MODULE_MAGIC;
 
 PG_FUNCTION_INFO_V1(plcontainer_call_handler);
 
-static Datum plcontainer_function_handler(FunctionCallInfo fcinfo, plcProcInfo *proc);
+static Datum plcontainer_function_handler(FunctionCallInfo fcinfo, plcProcedure *proc);
 
 static plcProcResult *plcontainer_get_result(FunctionCallInfo fcinfo,
-                                             plcProcInfo *proc);
+                                             plcProcedure *proc);
 
 static Datum plcontainer_process_result(FunctionCallInfo fcinfo,
-                                        plcProcInfo *proc,
+                                        plcProcedure *proc,
                                         plcProcResult *presult);
 
 static void plcontainer_process_exception(plcMsgError *msg);
 
-static void plcontainer_process_sql(plcMsgSQL *msg, plcConn *conn, plcProcInfo *proc);
+static void plcontainer_process_sql(plcMsgSQL *msg, plcConn *conn, plcProcedure *proc);
 
 static void plcontainer_process_log(plcMsgLog *log);
 
@@ -123,7 +123,7 @@ Datum plcontainer_call_handler(PG_FUNCTION_ARGS) {
 	{
 
 
-		plcProcInfo *proc;
+		plcProcedure *proc;
 		/*TODO By default we return NULL */
 		fcinfo->isnull = true;
 
@@ -162,7 +162,7 @@ Datum plcontainer_call_handler(PG_FUNCTION_ARGS) {
 }
 
 static plcProcResult *plcontainer_get_result(FunctionCallInfo fcinfo,
-                                             plcProcInfo *proc) {
+                                             plcProcedure *proc) {
 	char *runtime_id;
 	plcConn *conn;
 	int message_type;
@@ -292,7 +292,7 @@ static plcProcResult *plcontainer_get_result(FunctionCallInfo fcinfo,
  * Processing client results message
  */
 static Datum plcontainer_process_result(FunctionCallInfo fcinfo,
-                                        plcProcInfo *proc,
+                                        plcProcedure *proc,
                                         plcProcResult *presult) {
 	Datum result = (Datum) 0;
 	plcMsgResult *resmsg = presult->resmsg;
@@ -336,7 +336,7 @@ static void plcontainer_process_log(plcMsgLog *log) {
 /*
  * Processing client SQL query message
  */
-static void plcontainer_process_sql(plcMsgSQL *msg, plcConn *conn, plcProcInfo *proc) {
+static void plcontainer_process_sql(plcMsgSQL *msg, plcConn *conn, plcProcedure *proc) {
 	plcMessage *res;
 	volatile MemoryContext oldcontext;
 	volatile ResourceOwner oldowner;
@@ -398,7 +398,7 @@ static void plcontainer_process_exception(plcMsgError *msg) {
 
 /* function handler and friends */
 static Datum
-plcontainer_function_handler(FunctionCallInfo fcinfo, plcProcInfo *proc)
+plcontainer_function_handler(FunctionCallInfo fcinfo, plcProcedure *proc)
 {
 	Datum						datumreturn;
 	plcProcResult * volatile 	presult = 		NULL;

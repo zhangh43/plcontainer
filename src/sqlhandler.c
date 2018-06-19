@@ -240,7 +240,7 @@ void init_pplan_slots(plcConn *conn) {
 }
 
 
-plcMessage *handle_sql_message(plcMsgSQL *msg, plcConn *conn, plcProcInfo *pinfo) {
+plcMessage *handle_sql_message(plcMsgSQL *msg, plcConn *conn, plcProcedure *pinfo) {
 	int i, retval;
 	plcMessage *result = NULL;
 	SPIPlanPtr tmpplan;
