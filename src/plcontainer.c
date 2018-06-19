@@ -62,9 +62,6 @@ static void plcontainer_process_sql(plcMsgSQL *msg, plcConn *conn, plcProcInfo *
 
 static void plcontainer_process_log(plcMsgLog *log);
 
-/* Get the innermost python procedure called from the backend */
-static char *PLy_procedure_name(plcProcInfo *);
-
 static volatile bool DeleteBackendsWhenError;
 
 /* this is saved and restored by plcontainer_call_handler */
@@ -97,8 +94,6 @@ _PG_init(void) {
 Datum plcontainer_call_handler(PG_FUNCTION_ARGS) {
 	Datum datumreturn = (Datum) 0;
 	int ret;
-	//plcProcInfo *save_curr_proc;
-	ErrorContextCallback plerrcontext;
 
 	/* TODO: handle trigger requests as well */
 	if (CALLED_AS_TRIGGER(fcinfo)) {
@@ -400,23 +395,6 @@ static void plcontainer_process_exception(plcMsgError *msg) {
 	}
 	free_error(msg);
 }
-
-
-/*
- * Get the name of the last procedure called by the backend (the
- * innermost, if a plpython procedure call calls the backend and the
- * backend calls another plpython procedure).
- *
- * NB: this returns the SQL name, not the internal Python procedure name
- */
-static char *
-PLy_procedure_name(plcProcInfo *proc)
-{
-	if (proc == NULL)
-		return "<unknown procedure>";
-	return proc->proname;
-}
-
 
 /* function handler and friends */
 static Datum
