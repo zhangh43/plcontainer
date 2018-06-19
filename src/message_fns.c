@@ -111,6 +111,7 @@ plcProcedure *plcontainer_procedure_get(FunctionCallInfo fcinfo) {
 static plcProcedure *
 plcontainer_procedure_create(HeapTuple procTup, Oid fn_oid) {
 
+	plcProcedure * volatile proc = NULL;
 	int lenOfArgnames;
 	Datum *argnames = NULL;
 	bool *argnulls = NULL;
@@ -118,7 +119,6 @@ plcontainer_procedure_create(HeapTuple procTup, Oid fn_oid) {
 	Datum srcdatum, namedatum;
 	HeapTuple textHeapTup = NULL;
 	Form_pg_type typeTup;
-	plcProcedure * volatile proc = NULL;
 	char procName[NAMEDATALEN + 256];
 	Form_pg_proc procStruct;
 	bool isnull;
@@ -126,7 +126,7 @@ plcontainer_procedure_create(HeapTuple procTup, Oid fn_oid) {
 
 	procStruct = (Form_pg_proc) GETSTRUCT(procTup);
 	rv = snprintf(procName, sizeof(procName), "__plpython_procedure_%s_%u",
-			NameStr(procStruct->proname), procoid/*TODOfn_oid*/);
+			NameStr(procStruct->proname), fn_oid);
 	if (rv < 0 || (unsigned int) rv >= sizeof(procName))
 		elog(ERROR, "procedure name would overrun buffer");
 
@@ -149,7 +149,7 @@ plcontainer_procedure_create(HeapTuple procTup, Oid fn_oid) {
 	/* Remember if function is STABLE/IMMUTABLE */
 	proc->fn_readonly = (procStruct->provolatile != PROVOLATILE_VOLATILE);
 
-	proc->retset = fcinfo->flinfo->fn_retset;
+	proc->retset = 1;//TODO:fcinfo->flinfo->fn_retset;
 
 	proc->hasChanged = 1;
 
@@ -230,6 +230,8 @@ plcontainer_procedure_create(HeapTuple procTup, Oid fn_oid) {
 
 	/* Cache the function for later use */
 	function_cache_put(proc);
+
+	return proc;
 }
 
 void free_proc_info(plcProcedure *proc) {
