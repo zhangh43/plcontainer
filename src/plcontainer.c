@@ -672,7 +672,7 @@ plcontainer_function_handler(FunctionCallInfo fcinfo, plcProcInfo *proc)
 	}
 	PG_END_TRY();
 
-	error_context_stack = plerrcontext.previous;
+	//error_context_stack = plerrcontext.previous;
 
 	if (fcinfo->flinfo->fn_retset) {
 		SRF_RETURN_NEXT(funcctx, datumreturn);
