@@ -40,22 +40,25 @@ typedef struct {
 } plcProcResult;
 
 typedef struct {
-	char	   *proname;		/* SQL name of procedure */
-	char	   *pyname;			/* Python name of procedure */
-	/* Greenplum Function Information */
-	Oid funcOid;
-	TransactionId fn_xmin; /* Transaction ID that created this function in catalog */
+	/* plpython inherit */
+	char	   *proname;		     /* SQL name of procedure */
+	char	   *pyname;		 	 /* Python name of procedure */
+	TransactionId fn_xmin;   /* Transaction ID that created this function in catalog */
 	ItemPointerData fn_tid;  /* ItemPointer for the function row in catalog */
-	/* Universal Function Information */
-	char *name;
-	char *src;
-	int hasChanged; /* Whether the function has changed since last call */
-	plcTypeInfo result;
-	int retset;
-	int nargs;
-	char **argnames;
-	plcTypeInfo *argtypes;
 	bool fn_readonly;
+	plcTypeInfo result;
+
+	char *src;               /* catalog field Anum_pg_proc_prosrc */
+	char **argnames;         /* Argument names */
+	plcTypeInfo *args;
+	int nargs;
+
+	/* PLContainer specific */
+	char *name;              /* catalog field Anum_pg_proc_prosrc */
+	int hasChanged;          /* Whether the function has changed since last call */
+	int retset;
+	Oid funcOid;
+
 } plcProcInfo;
 
 plcProcInfo *plcontainer_procedure_get(FunctionCallInfo fcinfo);

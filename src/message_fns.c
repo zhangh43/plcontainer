@@ -100,11 +100,8 @@ plcProcInfo *plcontainer_procedure_get(FunctionCallInfo fcinfo) {
 
 		char procName[NAMEDATALEN + 256];
 		Form_pg_proc procStruct;
-		//char * volatile procSource = NULL;
-		//Datum prosrcdatum;
 		bool isnull;
 		int rv;
-
 
 		procStruct = (Form_pg_proc) GETSTRUCT(procHeapTup);
 		rv = snprintf(procName, sizeof(procName), "__plpython_procedure_%s_%u",
@@ -122,20 +119,6 @@ plcProcInfo *plcontainer_procedure_get(FunctionCallInfo fcinfo) {
 		if (proc == NULL) {
 			plc_elog(FATAL, "Cannot allocate memory for plcProcInfo structure");
 		}
-		/* Remember transactional information to allow caching */
-
-
-	/*
-
-		PLy_typeinfo_init(&proc->result);
-		for (i = 0; i < FUNC_MAX_ARGS; i++)
-			PLy_typeinfo_init(&proc->args[i]);
-		proc->nargs = 0;
-		proc->code = proc->statics = NULL;
-		proc->globals = NULL;
-		proc->src = NULL;
-		proc->argnames = NULL;
-		*/
 
 		proc->proname = PLy_strdup(NameStr(procStruct->proname));
 		proc->pyname = PLy_strdup(procName);
@@ -157,9 +140,9 @@ plcProcInfo *plcontainer_procedure_get(FunctionCallInfo fcinfo) {
 			// This is required to avoid the cycle from being removed by optimizer
 			int volatile j;
 
-			proc->argtypes = PLy_malloc(proc->nargs * sizeof(plcTypeInfo));
+			proc->args = PLy_malloc(proc->nargs * sizeof(plcTypeInfo));
 			for (j = 0; j < proc->nargs; j++) {
-				fill_type_info(fcinfo, procStruct->proargtypes.values[j], &proc->argtypes[j]);
+				fill_type_info(fcinfo, procStruct->proargtypes.values[j], &proc->args[j]);
 			}
 
 			argnamesArray = SysCacheGetAttr(PROCOID, procHeapTup,
@@ -204,7 +187,7 @@ plcProcInfo *plcontainer_procedure_get(FunctionCallInfo fcinfo) {
 				ReleaseSysCache(textHeapTup);
 			}
 		} else {
-			proc->argtypes = NULL;
+			proc->args = NULL;
 			proc->argnames = NULL;
 		}
 
@@ -233,11 +216,11 @@ void free_proc_info(plcProcInfo *proc) {
 		if (proc->argnames[i] != NULL) {
 			pfree(proc->argnames[i]);
 		}
-		free_type_info(&proc->argtypes[i]);
+		free_type_info(&proc->args[i]);
 	}
 	if (proc->nargs > 0) {
 		pfree(proc->argnames);
-		pfree(proc->argtypes);
+		pfree(proc->args);
 	}
 	pfree(proc);
 }
@@ -310,7 +293,7 @@ static bool plc_procedure_valid(plcProcInfo *proc, HeapTuple procTup) {
 
 			// If there are composite input arguments, they might have changed
 			for (i = 0; i < proc->nargs && valid; i++) {
-				valid = plc_type_valid(&proc->argtypes[i]);
+				valid = plc_type_valid(&proc->args[i]);
 			}
 
 			// Also check for composite output type
@@ -331,14 +314,14 @@ static void fill_callreq_arguments(FunctionCallInfo fcinfo, plcProcInfo *proc, p
 
 	for (i = 0; i < proc->nargs; i++) {
 		req->args[i].name = proc->argnames[i];
-		copy_type_info(&req->args[i].type, &proc->argtypes[i]);
+		copy_type_info(&req->args[i].type, &proc->args[i]);
 
 		if (fcinfo->argnull[i]) {
 			req->args[i].data.isnull = 1;
 			req->args[i].data.value = NULL;
 		} else {
 			req->args[i].data.isnull = 0;
-			req->args[i].data.value = proc->argtypes[i].outfunc(fcinfo->arg[i], &proc->argtypes[i]);
+			req->args[i].data.value = proc->args[i].outfunc(fcinfo->arg[i], &proc->args[i]);
 		}
 	}
 }
