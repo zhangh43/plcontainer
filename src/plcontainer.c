@@ -229,19 +229,19 @@ Datum plcontainer_call_handler(PG_FUNCTION_ARGS) {
 	{
 
 
-		//plcProcInfo *proc;
+		plcProcInfo *proc;
 		/*????? By default we return NULL */
-		//fcinfo->isnull = true;
+		fcinfo->isnull = true;
 
 		/* Get procedure info from cache or compose it based on catalog */
-		//proc = plcontainer_procedure_get(fcinfo);
+		proc = plcontainer_procedure_get(fcinfo);
 
 		//TODO:pyelog(LOG, "Calling python proc @ address: %p", proc);
 		//PLy_curr_procedure = proc;
 
-		//datumreturn = plcontainer_function_handler(fcinfo, proc);
+		datumreturn = plcontainer_function_handler(fcinfo, proc);
 
-		datumreturn = plcontainer_call_hook(fcinfo);
+		//datumreturn = plcontainer_call_hook(fcinfo);
 
 	}
 	PG_CATCH();
@@ -261,8 +261,8 @@ Datum plcontainer_call_handler(PG_FUNCTION_ARGS) {
 	PG_END_TRY();
 
 	/**
-	 *  TODO: SPI_finish() will switch back the memory context. Upstream code place it at earlier
-	 *  part of code, we'd better find the right place for it in plcontainer.
+	 *  TODO: SPI_finish() will clear the old memory context. Upstream code place it at earlier
+	 *  part of code, but we need to place it here.
 	 */
 	ret = SPI_finish();
 	if (ret != SPI_OK_FINISH)
@@ -536,7 +536,7 @@ plcontainer_function_handler(FunctionCallInfo fcinfo, plcProcInfo *proc)
 	FuncCallContext	*volatile	funcctx		   = NULL;
 
 	bool						bFirstTimeCall = false;
-	ErrorContextCallback		plerrcontext;
+	//ErrorContextCallback		plerrcontext;
 
 	PG_TRY();
 	{
@@ -641,9 +641,9 @@ plcontainer_function_handler(FunctionCallInfo fcinfo, plcProcInfo *proc)
 		//if (SPI_finish() != SPI_OK_FINISH)
 		//	elog(ERROR, "SPI_finish failed");
 
-		plerrcontext.callback = plpython_return_error_callback;
-		plerrcontext.previous = error_context_stack;
-		error_context_stack = &plerrcontext;
+		//plerrcontext.callback = plpython_return_error_callback;
+		//plerrcontext.previous = error_context_stack;
+		//error_context_stack = &plerrcontext;
 
 
 		/* Process the result message from client */
