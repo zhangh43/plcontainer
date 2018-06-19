@@ -530,17 +530,13 @@ plcontainer_function_handler(FunctionCallInfo fcinfo, plcProcInfo *proc)
 {
 	Datum					datumreturn;
 	plcProcResult *presult = NULL;
-
 	MemoryContext oldcontext = CurrentMemoryContext;
-
 	FuncCallContext	*volatile	funcctx		   = NULL;
-
 	bool						bFirstTimeCall = false;
-	//ErrorContextCallback		plerrcontext;
 
 	PG_TRY();
 	{
-		//pyelog(INFO, "fcinfo->flinfo->fn_retset: %d", fcinfo->flinfo->fn_retset);
+		plc_elog(DEBUG1, "fcinfo->flinfo->fn_retset: %d", fcinfo->flinfo->fn_retset);
 
 		if (fcinfo->flinfo->fn_retset)
 		{
@@ -550,16 +546,19 @@ plcontainer_function_handler(FunctionCallInfo fcinfo, plcProcInfo *proc)
 				funcctx = SRF_FIRSTCALL_INIT();
 				bFirstTimeCall = true;
 
-				//pyelog(INFO, "The funcctx pointer returned by SRF_FIRSTCALL_INIT() is: %p", funcctx);
+				plc_elog(DEBUG1, "The funcctx pointer returned by SRF_FIRSTCALL_INIT() is: %p", funcctx);
 			}
 
 			/* Every call setup */
 			funcctx = SRF_PERCALL_SETUP();
-			//pyelog(INFO, "The funcctx pointer returned by SRF_PERCALL_SETUP() is: %p", funcctx);
+			plc_elog(DEBUG1, "The funcctx pointer returned by SRF_PERCALL_SETUP() is: %p", funcctx);
 
 			Assert(funcctx != NULL);
-			/* SRF initializes special context shared between function calls */
-			//TODO: why plpython not use multi_call_memory_ctx
+			/* SRF uses multi_call_memory_ctx context shared between function calls,
+			 * since EXPR etc. context will be cleared after one of the SRF calls.
+			 * Note that plpython doesn't need it, because it doesn't use palloc to store
+			 * the SRF result.
+			 */
 			oldcontext = MemoryContextSwitchTo(funcctx->multi_call_memory_ctx);
 		} else {
 			oldcontext = MemoryContextSwitchTo(pl_container_caller_context);
@@ -573,17 +572,16 @@ plcontainer_function_handler(FunctionCallInfo fcinfo, plcProcInfo *proc)
 				 * SETOF function parameters will be deleted when last row is
 				 * returned
 				 */
-				//TODOPLy_function_delete_args(proc);
+				//TODO
+				//PLy_function_delete_args(proc);
 			}
-		} else {
-
 		}
 
 		if (fcinfo->flinfo->fn_retset) {
 			ReturnSetInfo *rsi = (ReturnSetInfo *) fcinfo->resultinfo;
 
 			if (funcctx->user_fctx == NULL) {
-				//pyelog(INFO, "first time call, preparing the result set...");
+				plc_elog(DEBUG1, "first time call, preparing the result set...");
 
 				/* first time -- do checks and setup */
 				if (!rsi || !IsA(rsi, ReturnSetInfo)
@@ -621,30 +619,12 @@ plcontainer_function_handler(FunctionCallInfo fcinfo, plcProcInfo *proc)
 				funcctx->user_fctx = NULL;
 
 
-				//TODOPLy_function_delete_args(proc);
-
-
-				/* TODO Disconnect from the SPI manager before returning */
-				//if (SPI_finish() != SPI_OK_FINISH)
-				//	elog(ERROR, "SPI_finish failed");
+				//TODO
+				//PLy_function_delete_args(proc);
 
 				SRF_RETURN_DONE(funcctx);
 			}
 		}
-
-		/* TODO
-		 * Disconnect from SPI manager and then create the return values datum
-		 * (if the input function does a palloc for it this must not be
-		 * allocated in the SPI memory context because SPI_finish would free
-		 * it).
-		 */
-		//if (SPI_finish() != SPI_OK_FINISH)
-		//	elog(ERROR, "SPI_finish failed");
-
-		//plerrcontext.callback = plpython_return_error_callback;
-		//plerrcontext.previous = error_context_stack;
-		//error_context_stack = &plerrcontext;
-
 
 		/* Process the result message from client */
 		datumreturn = plcontainer_process_result(fcinfo, proc, presult);
@@ -672,8 +652,6 @@ plcontainer_function_handler(FunctionCallInfo fcinfo, plcProcInfo *proc)
 	}
 	PG_END_TRY();
 
-	//error_context_stack = plerrcontext.previous;
-
 	if (fcinfo->flinfo->fn_retset) {
 		SRF_RETURN_NEXT(funcctx, datumreturn);
 	} else {
@@ -686,10 +664,6 @@ plcontainer_function_handler(FunctionCallInfo fcinfo, plcProcInfo *proc)
 #endif
 
 	return datumreturn;
-
-
-
-
 }
 
 
