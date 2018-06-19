@@ -42,7 +42,7 @@ PG_MODULE_MAGIC;
 #endif
 
 #ifdef PLC_PG
-    volatile bool QueryFinishPending = false;     //todo
+    volatile bool QueryFinishPending = false;
 #endif
 
 PG_FUNCTION_INFO_V1(plcontainer_call_handler);
@@ -64,12 +64,6 @@ static void plcontainer_process_log(plcMsgLog *log);
 
 /* Get the innermost python procedure called from the backend */
 static char *PLy_procedure_name(plcProcInfo *);
-
-
-/*
- * Currently active plpython function
- */
-static plcProcInfo *PLy_curr_procedure = NULL;
 
 static volatile bool DeleteBackendsWhenError;
 
@@ -100,92 +94,6 @@ _PG_init(void) {
 	inited = true;
 }
 
-static void
-plpython_error_callback(pg_attribute_unused() void *arg)
-{
-	if (PLy_curr_procedure)
-		errcontext("PL/Python function \"%s\"",
-				   PLy_procedure_name(PLy_curr_procedure));
-}
-
-static void
-plpython_return_error_callback(pg_attribute_unused() void *arg)
-{
-	if (PLy_curr_procedure)
-		errcontext("while creating return value");
-}
-
-
-static Datum plcontainer_call_hook(PG_FUNCTION_ARGS) {
-	Datum result = (Datum) 0;
-	plcProcInfo *pinfo;
-	bool bFirstTimeCall = true;
-	FuncCallContext *volatile funcctx = NULL;
-	MemoryContext oldcontext = NULL;
-	plcProcResult *presult = NULL;
-
-	/* By default we return NULL */
-	fcinfo->isnull = true;
-
-	/* Get procedure info from cache or compose it based on catalog */
-	pinfo = plcontainer_procedure_get(fcinfo);
-
-	/* If we have a set-retuning function */
-	if (fcinfo->flinfo->fn_retset) {
-		/* First Call setup */
-		if (SRF_IS_FIRSTCALL()) {
-			funcctx = SRF_FIRSTCALL_INIT();
-		} else {
-			bFirstTimeCall = false;
-		}
-
-		/* Every call setup */
-		funcctx = SRF_PERCALL_SETUP();
-		Assert(funcctx != NULL);
-
-		/* SRF initializes special context shared between function calls */
-		oldcontext = MemoryContextSwitchTo(funcctx->multi_call_memory_ctx);
-	} else {
-		oldcontext = MemoryContextSwitchTo(pl_container_caller_context);
-	}
-
-	/* First time call for SRF or just a call of scalar function */
-	if (bFirstTimeCall) {
-		presult = plcontainer_get_result(fcinfo, pinfo);
-		if (fcinfo->flinfo->fn_retset) {
-			funcctx->user_fctx = (void *) presult;
-		}
-	} else {
-		presult = (plcProcResult *) funcctx->user_fctx;
-	}
-
-	/* If we processed all the rows or the function returned 0 rows we can return immediately */
-	if (presult->resrow >= presult->resmsg->rows) {
-		free_result(presult->resmsg, false);
-		pfree(presult);
-		MemoryContextSwitchTo(oldcontext);
-		SRF_RETURN_DONE(funcctx);
-	}
-
-	/* Process the result message from client */
-	result = plcontainer_process_result(fcinfo, pinfo, presult);
-
-	presult->resrow += 1;
-	MemoryContextSwitchTo(oldcontext);
-
-	if (fcinfo->flinfo->fn_retset) {
-		SRF_RETURN_NEXT(funcctx, result);
-	} else {
-		free_result(presult->resmsg, false);
-		pfree(presult);
-	}
-#ifndef PLC_PG
-	SIMPLE_FAULT_NAME_INJECTOR("plcontainer_before_udf_finish");
-#endif
-	return result;
-}
-
-
 Datum plcontainer_call_handler(PG_FUNCTION_ARGS) {
 	Datum datumreturn = (Datum) 0;
 	int ret;
@@ -208,18 +116,9 @@ Datum plcontainer_call_handler(PG_FUNCTION_ARGS) {
 		plc_elog(ERROR, "[plcontainer] SPI connect error: %d (%s)", ret,
 		     SPI_result_code_string(ret));
 
-	//TODO
-	//pyelog(LOG, "Entering call handler with  PLy_curr_procedure: %p",
-	//		PLy_curr_procedure);
 
-	//save_curr_proc = PLy_curr_procedure;
+	plc_elog(DEBUG1, "Entering call handler with  PLy_curr_procedure");
 
-	/*
-	 * Setup error traceback support for ereport()
-	 */
-	//plerrcontext.callback = plpython_error_callback;
-	//plerrcontext.previous = error_context_stack;
-	//error_context_stack = &plerrcontext;
 
 	/* We need to cover this in try-catch block to catch the even of user
 	 * requesting the query termination. In this case we should forcefully
@@ -230,19 +129,15 @@ Datum plcontainer_call_handler(PG_FUNCTION_ARGS) {
 
 
 		plcProcInfo *proc;
-		/*????? By default we return NULL */
+		/*TODO By default we return NULL */
 		fcinfo->isnull = true;
 
 		/* Get procedure info from cache or compose it based on catalog */
 		proc = plcontainer_procedure_get(fcinfo);
 
-		//TODO:pyelog(LOG, "Calling python proc @ address: %p", proc);
-		//PLy_curr_procedure = proc;
+		plc_elog(DEBUG1, "Calling python proc @ address: %p", proc);
 
 		datumreturn = plcontainer_function_handler(fcinfo, proc);
-
-		//datumreturn = plcontainer_call_hook(fcinfo);
-
 	}
 	PG_CATCH();
 	{
@@ -255,13 +150,12 @@ Datum plcontainer_call_handler(PG_FUNCTION_ARGS) {
 			delete_containers();
 			DeleteBackendsWhenError = false;
 		}
-		//PLy_curr_procedure = save_curr_proc;
 		PG_RE_THROW();
 	}
 	PG_END_TRY();
 
 	/**
-	 *  TODO: SPI_finish() will clear the old memory context. Upstream code place it at earlier
+	 *  SPI_finish() will clear the old memory context. Upstream code place it at earlier
 	 *  part of code, but we need to place it here.
 	 */
 	ret = SPI_finish();
@@ -572,7 +466,7 @@ plcontainer_function_handler(FunctionCallInfo fcinfo, plcProcInfo *proc)
 				 * SETOF function parameters will be deleted when last row is
 				 * returned
 				 */
-				//TODO
+				//TODO: delete proc->global when support it.
 				//PLy_function_delete_args(proc);
 			}
 		}
@@ -618,8 +512,7 @@ plcontainer_function_handler(FunctionCallInfo fcinfo, plcProcInfo *proc)
 
 				funcctx->user_fctx = NULL;
 
-
-				//TODO
+				//TODO: delete proc->global when support it.
 				//PLy_function_delete_args(proc);
 
 				SRF_RETURN_DONE(funcctx);
