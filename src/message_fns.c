@@ -153,62 +153,125 @@ plcontainer_procedure_create(FunctionCallInfo fcinfo, HeapTuple procTup, Oid fn_
 
 	proc->hasChanged = 1;
 
-	procStruct = (Form_pg_proc) GETSTRUCT(procTup);
+	procStruct = (Form_pg_proc) GETSTRUCT(procTup);//TODO delete
 	fill_type_info(fcinfo, procStruct->prorettype, &proc->result);
 
-	proc->nargs = procStruct->pronargs;
-	if (proc->nargs > 0) {
+	HeapTuple rvTypeTup;
+	Form_pg_type rvTypeStruct;
+
+	rvTypeTup = SearchSysCache1(TYPEOID,
+			ObjectIdGetDatum(procStruct->prorettype));
+	if (!HeapTupleIsValid(rvTypeTup))
+		elog(ERROR, "cache lookup failed for type %u", procStruct->prorettype);
+	rvTypeStruct = (Form_pg_type) GETSTRUCT(rvTypeTup);
+
+	/* Disallow pseudotype result, except for void or record */
+	if (rvTypeStruct->typtype == TYPTYPE_PSEUDO) {
+		if (procStruct->prorettype == TRIGGEROID)
+			ereport(ERROR,
+					(errcode(ERRCODE_FEATURE_NOT_SUPPORTED), errmsg(
+							"trigger functions can only be called as triggers")));
+		else if (procStruct->prorettype != VOIDOID
+				&& procStruct->prorettype != RECORDOID)
+			ereport(ERROR,
+					(errcode(ERRCODE_FEATURE_NOT_SUPPORTED), errmsg(
+							"PL/Python functions cannot return type %s",
+							format_type_be(procStruct->prorettype))));
+	}
+
+	if (rvTypeStruct->typtype == TYPTYPE_COMPOSITE
+			|| procStruct->prorettype == RECORDOID) {
+		/*
+		 * Tuple: set up later, during first call to
+		 * PLy_function_handler
+		 */
+		proc->result.out.d.typoid = procStruct->prorettype;
+		proc->result.out.d.typmod = -1;
+		proc->result.is_rowtype = 2;
+	} else {
+		/* do the real work */
+		PLy_output_datum_func(&proc->result, rvTypeTup);
+	}
+
+	ReleaseSysCache(rvTypeTup);
+
+	/*
+	 * Now get information required for input conversion of the
+	 * procedure's arguments.  Note that we ignore output arguments here
+	 * --- since we don't support returning record, and that was already
+	 * checked above, there's no need to worry about multiple output
+	 * arguments.
+	 */
+	if (procStruct->pronargs) {
+		Oid *types;
+		char **names, *modes;
+		int i, pos, total;
+
 		// This is required to avoid the cycle from being removed by optimizer
-		int volatile j;
+		/*int volatile j;
 
 		proc->args = PLy_malloc(proc->nargs * sizeof(plcTypeInfo));
 		for (j = 0; j < proc->nargs; j++) {
 			fill_type_info(fcinfo, procStruct->proargtypes.values[j],
 					&proc->args[j]);
-		}
+		}*/
 
-		argnamesArray = SysCacheGetAttr(PROCOID, procTup,
-				Anum_pg_proc_proargnames, &isnull);
-		/* If at least some arguments have names */
-		if (!isnull) {
-			textHeapTup = SearchSysCache(TYPEOID, ObjectIdGetDatum(TEXTOID), 0,
-					0, 0);
-			if (!HeapTupleIsValid(textHeapTup)) {
-				plc_elog(FATAL, "cannot find text type in cache");
-			}
-			typeTup = (Form_pg_type) GETSTRUCT(textHeapTup);
-			deconstruct_array(DatumGetArrayTypeP(argnamesArray), TEXTOID,
-					typeTup->typlen, typeTup->typbyval, typeTup->typalign,
-					&argnames, &argnulls, &lenOfArgnames);
-			/* UDF may contain OUT parameter, which is not considered as
-			 * arguement number. So the length of argname list(container both INPUT and OUTPUT)
-			 * maybe smaller than arguement number. There is no need to pass OUTPUT name to container.
-			 */
-			if (lenOfArgnames < proc->nargs) {
-				plc_elog(ERROR,
-						"Length of argname list(%d) should be equal to or larger than \
-						number of args(%d)",
-						lenOfArgnames, proc->nargs);
+		/* extract argument type info from the pg_proc tuple */
+		total = get_func_arg_info(procTup, &types, &names, &modes);
+
+		/* count number of in+inout args into proc->nargs */
+		if (modes == NULL)
+			proc->nargs = total;
+		else {
+			/* proc->nargs was initialized to 0 above */
+			for (i = 0; i < total; i++) {
+				if (modes[i] != PROARGMODE_OUT && modes[i] != PROARGMODE_TABLE)
+					(proc->nargs)++;
 			}
 		}
 
-		proc->argnames = PLy_malloc(proc->nargs * sizeof(char *));
-		for (j = 0; j < proc->nargs; j++) {
-			if (!isnull && !argnulls[j]) {
-				proc->argnames[j] = plc_top_strdup(
-						DatumGetCString(
-								DirectFunctionCall1(textout, argnames[j])));
-				if (strlen(proc->argnames[j]) == 0) {
-					pfree(proc->argnames[j]);
-					proc->argnames[j] = NULL;
-				}
-			} else {
-				proc->argnames[j] = NULL;
-			}
-		}
+		proc->argnames = (char **) PLy_malloc0(sizeof(char *) * proc->nargs);
 
-		if (textHeapTup != NULL) {
-			ReleaseSysCache(textHeapTup);
+		for (i = pos = 0; i < total; i++) {
+			HeapTuple argTypeTup;
+			Form_pg_type argTypeStruct;
+
+			if (modes
+					&& (modes[i] == PROARGMODE_OUT
+							|| modes[i] == PROARGMODE_TABLE))
+				continue; /* skip OUT arguments */
+
+			Assert(types[i] == procStruct->proargtypes.values[pos]);
+
+			argTypeTup = SearchSysCache1(TYPEOID, ObjectIdGetDatum(types[i]));
+			if (!HeapTupleIsValid(argTypeTup))
+				elog(ERROR, "cache lookup failed for type %u", types[i]);
+			argTypeStruct = (Form_pg_type) GETSTRUCT(argTypeTup);
+
+			/* check argument type is OK, set up I/O function info */
+			switch (argTypeStruct->typtype) {
+			case TYPTYPE_PSEUDO:
+				/* Disallow pseudotype argument */
+				ereport(ERROR,
+						(errcode(ERRCODE_FEATURE_NOT_SUPPORTED), errmsg(
+								"PL/Python functions cannot accept type %s",
+								format_type_be(types[i]))));
+				break;
+			case TYPTYPE_COMPOSITE:
+				/* we'll set IO funcs at first call */
+				proc->args[pos].is_rowtype = 2;
+				break;
+			default:
+				plc_input_datum_func(&(proc->args[pos]), types[i], argTypeTup);
+				break;
+			}
+
+			/* get argument name */
+			proc->argnames[pos] = names ? PLy_strdup(names[i]) : NULL;
+
+			ReleaseSysCache(argTypeTup);
+
+			pos++;
 		}
 	} else {
 		proc->args = NULL;
@@ -345,7 +408,7 @@ static void fill_callreq_arguments(FunctionCallInfo fcinfo, plcProcedure *proc, 
 			req->args[i].data.value = NULL;
 		} else {
 			req->args[i].data.isnull = 0;
-			req->args[i].data.value = proc->args[i].outfunc(fcinfo->arg[i], &proc->args[i]);
+			req->args[i].data.value = proc->args[i].in.d.func(fcinfo->arg[i], &(proc->args[i].in.d));
 		}
 	}
 }

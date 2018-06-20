@@ -142,6 +142,8 @@ int sanity_check_client(void);
 /* pfree & pstrdup are already defined by postgres */
 void *PLy_malloc(size_t bytes);
 
+void *PLy_malloc0(size_t bytes);
+
 char *plc_top_strdup(char *str);
 
 char *PLy_strdup(const char *);
