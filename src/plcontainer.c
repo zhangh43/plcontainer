@@ -316,7 +316,7 @@ static Datum plcontainer_process_result(FunctionCallInfo fcinfo,
 
 	if (resmsg->data[presult->resrow][0].isnull == 0) {
 		fcinfo->isnull = false;
-		result = proc->result.infunc(resmsg->data[presult->resrow][0].value, &proc->result);
+		result = proc->result.out.d.func(&(proc->result.out.d), -1, resmsg->data[presult->resrow][0].value, false);
 	}
 
 	return result;

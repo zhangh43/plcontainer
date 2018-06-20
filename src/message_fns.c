@@ -190,7 +190,7 @@ plcontainer_procedure_create(FunctionCallInfo fcinfo, HeapTuple procTup, Oid fn_
 		proc->result.is_rowtype = 2;
 	} else {
 		/* do the real work */
-		PLy_output_datum_func(&proc->result, rvTypeTup);
+		plc_output_datum_func(&proc->result, rvTypeTup);
 	}
 
 	ReleaseSysCache(rvTypeTup);
@@ -408,7 +408,7 @@ static void fill_callreq_arguments(FunctionCallInfo fcinfo, plcProcedure *proc, 
 			req->args[i].data.value = NULL;
 		} else {
 			req->args[i].data.isnull = 0;
-			req->args[i].data.value = proc->args[i].in.d.func(fcinfo->arg[i], &(proc->args[i].in.d));
+			req->args[i].data.value = proc->args[i].in.d.func(&(proc->args[i].in.d,fcinfo->arg[i]));
 		}
 	}
 }

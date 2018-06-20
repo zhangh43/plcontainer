@@ -768,12 +768,12 @@ plcList_FromArray_recurse(plcDatumToOb *elm, int *dims, int ndim, int dim,
 
 
 void
-PLy_output_datum_func(plcTypeInfo *arg, HeapTuple typeTup)
+plc_output_datum_func(plcTypeInfo *arg, HeapTuple typeTup)
 {
 	if (arg->is_rowtype > 0)
 		elog(ERROR, "PLyTypeInfo struct is initialized for a Tuple");
 	arg->is_rowtype = 0;
-	PLy_output_datum_func2(&(arg->out.d), typeTup);
+	plc_output_datum_func2(&(arg->out.d), typeTup);
 }
 
 

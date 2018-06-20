@@ -18,9 +18,9 @@
 
 typedef struct plcTypeInfo plcTypeInfo;
 
-//typedef char *(*plcDatumOutput)(Datum, plcTypeInfo *);
+typedef char *(*plcDatumOutput)(Datum, plcTypeInfo *);
 
-//typedef Datum (*plcDatumInput)(char *, plcTypeInfo *);
+typedef Datum (*plcDatumInput)(char *, plcTypeInfo *);
 
 
 struct PLyDatumToOb;
@@ -141,6 +141,8 @@ void plc_input_datum_func2(plcDatumToOb *, Oid, HeapTuple);
 
 void plc_output_datum_func(plcTypeInfo *arg, HeapTuple typeTup);
 void plc_output_datum_func2(plcObToDatum *arg, HeapTuple typeTup);
+
+void plc_output_datum_func(plcTypeInfo *arg, HeapTuple typeTup);
 
 void fill_type_info(FunctionCallInfo fcinfo, Oid typeOid, plcTypeInfo *type);
 
