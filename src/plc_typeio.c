@@ -42,56 +42,56 @@
 static void fill_type_info_inner(FunctionCallInfo fcinfo, Oid typeOid, plcTypeInfo *type,
                                  bool isArrayElement, bool isUDTElement);
 
-static char *plc_datum_as_int1(PLyDatumToOb *arg, Datum input);
+static char *plc_datum_as_int1(plcDatumToOb *arg, Datum input);
 
-static char *plc_datum_as_int2(PLyDatumToOb *arg, Datum input);
+static char *plc_datum_as_int2(plcDatumToOb *arg, Datum input);
 
-static char *plc_datum_as_int4(PLyDatumToOb *arg, Datum input);
+static char *plc_datum_as_int4(plcDatumToOb *arg, Datum input);
 
-static char *plc_datum_as_int8(PLyDatumToOb *arg, Datum input);
+static char *plc_datum_as_int8(plcDatumToOb *arg, Datum input);
 
-static char *plc_datum_as_float4(PLyDatumToOb *arg, Datum input);
+static char *plc_datum_as_float4(plcDatumToOb *arg, Datum input);
 
-static char *plc_datum_as_float8(PLyDatumToOb *arg, Datum input);
+static char *plc_datum_as_float8(plcDatumToOb *arg, Datum input);
 
-static char *plc_datum_as_float8_numeric(PLyDatumToOb *arg, Datum input);
+static char *plc_datum_as_float8_numeric(plcDatumToOb *arg, Datum input);
 
-static char *plc_datum_as_text(PLyDatumToOb *arg, Datum input);
+static char *plc_datum_as_text(plcDatumToOb *arg, Datum input);
 
-static char *plc_datum_as_bytea(PLyDatumToOb *arg, Datum input);
+static char *plc_datum_as_bytea(plcDatumToOb *arg, Datum input);
 
-static char *plc_datum_as_array(PLyDatumToOb *arg, Datum input);
+static char *plc_datum_as_array(plcDatumToOb *arg, Datum input);
 
 static void plc_backend_array_free(plcIterator *iter);
 
 static rawdata *plc_backend_array_next(plcIterator *self);
 
 
-static Datum plc_datum_from_int1(struct PLyObToDatum *arg, int32 typmod, char *input, bool inarray);
+static Datum plc_datum_from_int1(struct plcObToDatum *arg, int32 typmod, char *input, bool inarray);
 
-static Datum plc_datum_from_int2(struct PLyObToDatum *arg, int32 typmod, char *input, bool inarray);
+static Datum plc_datum_from_int2(struct plcObToDatum *arg, int32 typmod, char *input, bool inarray);
 
-static Datum plc_datum_from_int4(struct PLyObToDatum *arg, int32 typmod, char *input, bool inarray);
+static Datum plc_datum_from_int4(struct plcObToDatum *arg, int32 typmod, char *input, bool inarray);
 
-static Datum plc_datum_from_int8(struct PLyObToDatum *arg, int32 typmod, char *input, bool inarray);
+static Datum plc_datum_from_int8(struct plcObToDatum *arg, int32 typmod, char *input, bool inarray);
 
-static Datum plc_datum_from_float4(struct PLyObToDatum *arg, int32 typmod, char *input, bool inarray);
+static Datum plc_datum_from_float4(struct plcObToDatum *arg, int32 typmod, char *input, bool inarray);
 
-static Datum plc_datum_from_float8(struct PLyObToDatum *arg, int32 typmod, char *input, bool inarray);
+static Datum plc_datum_from_float8(struct plcObToDatum *arg, int32 typmod, char *input, bool inarray);
 
-static Datum plc_datum_from_float8_numeric(struct PLyObToDatum *arg, int32 typmod, char *input, bool inarray);
+static Datum plc_datum_from_float8_numeric(struct plcObToDatum *arg, int32 typmod, char *input, bool inarray);
 
-static Datum plc_datum_from_text(struct PLyObToDatum *arg, int32 typmod, char *input, bool inarray);
+static Datum plc_datum_from_text(struct plcObToDatum *arg, int32 typmod, char *input, bool inarray);
 
-static Datum plc_datum_from_text_ptr(struct PLyObToDatum *arg, int32 typmod, char *input, bool inarray);
+static Datum plc_datum_from_text_ptr(struct plcObToDatum *arg, int32 typmod, char *input, bool inarray);
 
-static Datum plc_datum_from_bytea(struct PLyObToDatum *arg, int32 typmod, char *input, bool inarray);
+static Datum plc_datum_from_bytea(struct plcObToDatum *arg, int32 typmod, char *input, bool inarray);
 
-static Datum plc_datum_from_bytea_ptr(struct PLyObToDatum *arg, int32 typmod, char *input, bool inarray);
+static Datum plc_datum_from_bytea_ptr(struct plcObToDatum *arg, int32 typmod, char *input, bool inarray);
 
-static Datum plc_datum_from_array(struct PLyObToDatum *arg, int32 typmod, char *input, bool inarray);
+static Datum plc_datum_from_array(struct plcObToDatum *arg, int32 typmod, char *input, bool inarray);
 
-static Datum plc_datum_from_composite(struct PLyObToDatum *arg, int32 typmod, char *input, bool inarray);
+static Datum plc_datum_from_composite(struct plcObToDatum *arg, int32 typmod, char *input, bool inarray);
 
 /*
  * This routine is a crock, and so is everyplace that calls it.  The problem
@@ -263,43 +263,43 @@ void free_type_info(plcTypeInfo *type) {
 	}
 }
 
-static char *plc_datum_as_int1(pg_attribute_unused() PLyDatumToOb *arg, Datum d) {
+static char *plc_datum_as_int1(pg_attribute_unused() plcDatumToOb *arg, Datum d) {
 	char *out = (char *) pmalloc(1);
 	*((char *) out) = DatumGetBool(d);
 	return out;
 }
 
-static char *plc_datum_as_int2(pg_attribute_unused() PLyDatumToOb *arg, Datum d) {
+static char *plc_datum_as_int2(pg_attribute_unused() plcDatumToOb *arg, Datum d) {
 	char *out = (char *) pmalloc(2);
 	*((int16 *) out) = DatumGetInt16(d);
 	return out;
 }
 
-static char *plc_datum_as_int4(pg_attribute_unused() PLyDatumToOb *arg, Datum d) {
+static char *plc_datum_as_int4(pg_attribute_unused() plcDatumToOb *arg, Datum d) {
 	char *out = (char *) pmalloc(4);
 	*((int32 *) out) = DatumGetInt32(d);
 	return out;
 }
 
-static char *plc_datum_as_int8(pg_attribute_unused() PLyDatumToOb *arg, Datum d) {
+static char *plc_datum_as_int8(pg_attribute_unused() plcDatumToOb *arg, Datum d) {
 	char *out = (char *) pmalloc(8);
 	*((int64 *) out) = DatumGetInt64(d);
 	return out;
 }
 
-static char *plc_datum_as_float4(pg_attribute_unused() PLyDatumToOb *arg, Datum d) {
+static char *plc_datum_as_float4(pg_attribute_unused() plcDatumToOb *arg, Datum d) {
 	char *out = (char *) pmalloc(4);
 	*((float4 *) out) = DatumGetFloat4(d);
 	return out;
 }
 
-static char *plc_datum_as_float8(pg_attribute_unused() PLyDatumToOb *arg, Datum d) {
+static char *plc_datum_as_float8(pg_attribute_unused() plcDatumToOb *arg, Datum d) {
 	char *out = (char *) pmalloc(8);
 	*((float8 *) out) = DatumGetFloat8(d);
 	return out;
 }
 
-static char *plc_datum_as_float8_numeric(pg_attribute_unused() PLyDatumToOb *arg, Datum d) {
+static char *plc_datum_as_float8_numeric(pg_attribute_unused() plcDatumToOb *arg, Datum d) {
 	char *out = (char *) pmalloc(8);
 	/* Numeric is casted to float8 which causes precision lost */
 	Datum fdatum = DirectFunctionCall1(numeric_float8, d);
@@ -307,11 +307,11 @@ static char *plc_datum_as_float8_numeric(pg_attribute_unused() PLyDatumToOb *arg
 	return out;
 }
 
-static char *plc_datum_as_text(PLyDatumToOb *arg, Datum d) {
+static char *plc_datum_as_text(plcDatumToOb *arg, Datum d) {
 	return OutputFunctionCall(&arg->typfunc, d);
 }
 
-static char *plc_datum_as_bytea(pg_attribute_unused() PLyDatumToOb *arg, Datum d) {
+static char *plc_datum_as_bytea(pg_attribute_unused() plcDatumToOb *arg, Datum d) {
 	text *txt = DatumGetByteaP(d);
 	int len = VARSIZE(txt) - VARHDRSZ;
 	char *out = (char *) pmalloc(len + 4);
@@ -320,7 +320,7 @@ static char *plc_datum_as_bytea(pg_attribute_unused() PLyDatumToOb *arg, Datum d
 	return out;
 }
 
-static char *plc_datum_as_array(PLyDatumToOb *arg, Datum d) {
+static char *plc_datum_as_array(plcDatumToOb *arg, Datum d) {
 	ArrayType *array = DatumGetArrayTypeP(d);
 	plcIterator *iter;
 	plcArrayMeta *meta;
@@ -397,50 +397,50 @@ static rawdata *plc_backend_array_next(plcIterator *self) {
 	return res;
 }
 
-static Datum plc_datum_from_int1(pg_attribute_unused() struct PLyObToDatum *arg, pg_attribute_unused() int32 typmod, char *input, pg_attribute_unused() bool inarray) {
+static Datum plc_datum_from_int1(pg_attribute_unused() struct plcObToDatum *arg, pg_attribute_unused() int32 typmod, char *input, pg_attribute_unused() bool inarray) {
 	return BoolGetDatum(*((bool *) input));
 }
 
-static Datum plc_datum_from_int2(pg_attribute_unused() struct PLyObToDatum *arg, pg_attribute_unused() int32 typmod, char *input, pg_attribute_unused() bool inarray) {
+static Datum plc_datum_from_int2(pg_attribute_unused() struct plcObToDatum *arg, pg_attribute_unused() int32 typmod, char *input, pg_attribute_unused() bool inarray) {
 	return Int16GetDatum(*((int16 *) input));
 }
 
-static Datum plc_datum_from_int4(pg_attribute_unused() struct PLyObToDatum *arg, pg_attribute_unused() int32 typmod, char *input, pg_attribute_unused() bool inarray) {
+static Datum plc_datum_from_int4(pg_attribute_unused() struct plcObToDatum *arg, pg_attribute_unused() int32 typmod, char *input, pg_attribute_unused() bool inarray) {
 	return Int32GetDatum(*((int32 *) input));
 }
 
-static Datum plc_datum_from_int8(pg_attribute_unused() struct PLyObToDatum *arg, pg_attribute_unused() int32 typmod, char *input, pg_attribute_unused() bool inarray) {
+static Datum plc_datum_from_int8(pg_attribute_unused() struct plcObToDatum *arg, pg_attribute_unused() int32 typmod, char *input, pg_attribute_unused() bool inarray) {
 	return Int64GetDatum(*((int64 *) input));
 }
 
-static Datum plc_datum_from_float4(pg_attribute_unused() struct PLyObToDatum *arg, pg_attribute_unused() int32 typmod, char *input, pg_attribute_unused() bool inarray) {
+static Datum plc_datum_from_float4(pg_attribute_unused() struct plcObToDatum *arg, pg_attribute_unused() int32 typmod, char *input, pg_attribute_unused() bool inarray) {
 	return Float4GetDatum(*((float4 *) input));
 }
 
-static Datum plc_datum_from_float8(pg_attribute_unused() struct PLyObToDatum *arg, pg_attribute_unused() int32 typmod, char *input, pg_attribute_unused() bool inarray) {
+static Datum plc_datum_from_float8(pg_attribute_unused() struct plcObToDatum *arg, pg_attribute_unused() int32 typmod, char *input, pg_attribute_unused() bool inarray) {
 	return Float8GetDatum(*((float8 *) input));
 }
 
-static Datum plc_datum_from_float8_numeric(pg_attribute_unused() struct PLyObToDatum *arg, pg_attribute_unused() int32 typmod, char *input, pg_attribute_unused() bool inarray) {
+static Datum plc_datum_from_float8_numeric(pg_attribute_unused() struct plcObToDatum *arg, pg_attribute_unused() int32 typmod, char *input, pg_attribute_unused() bool inarray) {
 	Datum fdatum = Float8GetDatum(*((float8 *) input));
 	return DirectFunctionCall1(float8_numeric, fdatum);
 }
 
-static Datum plc_datum_from_text(pg_attribute_unused() struct PLyObToDatum *arg, pg_attribute_unused() int32 typmod, char *input, pg_attribute_unused() bool inarray) {
+static Datum plc_datum_from_text(pg_attribute_unused() struct plcObToDatum *arg, pg_attribute_unused() int32 typmod, char *input, pg_attribute_unused() bool inarray) {
 	return OidFunctionCall3(type->input,
 	                        CStringGetDatum(input),
 	                        type->typelem,
 	                        type->typmod);
 }
 
-static Datum plc_datum_from_text_ptr(pg_attribute_unused() struct PLyObToDatum *arg, pg_attribute_unused() int32 typmod, char *input, pg_attribute_unused() bool inarray) {
+static Datum plc_datum_from_text_ptr(pg_attribute_unused() struct plcObToDatum *arg, pg_attribute_unused() int32 typmod, char *input, pg_attribute_unused() bool inarray) {
 	return OidFunctionCall3(type->input,
 	                        CStringGetDatum(*((char **) input)),
 	                        type->typelem,
 	                        type->typmod);
 }
 
-static Datum plc_datum_from_bytea(pg_attribute_unused() struct PLyObToDatum *arg, pg_attribute_unused() int32 typmod, char *input, pg_attribute_unused() bool inarray) {
+static Datum plc_datum_from_bytea(pg_attribute_unused() struct plcObToDatum *arg, pg_attribute_unused() int32 typmod, char *input, pg_attribute_unused() bool inarray) {
 	int size = *((int *) input);
 	bytea *result = palloc(size + VARHDRSZ);
 
@@ -449,11 +449,11 @@ static Datum plc_datum_from_bytea(pg_attribute_unused() struct PLyObToDatum *arg
 	return PointerGetDatum(result);
 }
 
-static Datum plc_datum_from_bytea_ptr(pg_attribute_unused() struct PLyObToDatum *arg, pg_attribute_unused() int32 typmod, char *input, pg_attribute_unused() bool inarray) {
+static Datum plc_datum_from_bytea_ptr(pg_attribute_unused() struct plcObToDatum *arg, pg_attribute_unused() int32 typmod, char *input, pg_attribute_unused() bool inarray) {
 	return plc_datum_from_bytea(*((char **) input), type);
 }
 
-static Datum plc_datum_from_array(pg_attribute_unused() struct PLyObToDatum *arg, pg_attribute_unused() int32 typmod, char *input, pg_attribute_unused() bool inarray) {
+static Datum plc_datum_from_array(pg_attribute_unused() struct plcObToDatum *arg, pg_attribute_unused() int32 typmod, char *input, pg_attribute_unused() bool inarray) {
 	Datum dvalue;
 	Datum *elems;
 	ArrayType *array = NULL;
@@ -500,22 +500,22 @@ static Datum plc_datum_from_array(pg_attribute_unused() struct PLyObToDatum *arg
 	return dvalue;
 }
 
-static Datum plc_datum_from_composite(pg_attribute_unused() struct PLyObToDatum *arg, pg_attribute_unused() int32 typmod, char *input, pg_attribute_unused() bool inarray) {
+static Datum plc_datum_from_composite(pg_attribute_unused() struct plcObToDatum *arg, pg_attribute_unused() int32 typmod, char *input, pg_attribute_unused() bool inarray) {
 	HeapTuple	tuple = NULL;
 	Datum		rv;
-	PLyTypeInfo info;
-	TupleDesc	desc;
+//	PLyTypeInfo info;
+//	TupleDesc	desc;
 
-	if (typmod != -1)
-		elog(ERROR, "received unnamed record type as input");
+//	if (typmod != -1)
+//		elog(ERROR, "received unnamed record type as input");
 
 	/* Create a dummy PLyTypeInfo */
-	MemSet(&info, 0, sizeof(PLyTypeInfo));
-	PLy_typeinfo_init(&info);
+//	MemSet(&info, 0, sizeof(PLyTypeInfo));
+//	PLy_typeinfo_init(&info);
 	/* Mark it as needing output routines lookup */
-	info.is_rowtype = 2;
+//	info.is_rowtype = 2;
 
-	desc = lookup_rowtype_tupdesc(arg->typoid, arg->typmod);
+//	desc = lookup_rowtype_tupdesc(arg->typoid, arg->typmod);
 
 	/*
 	 * This will set up the dummy PLyTypeInfo's output conversion routines,
@@ -523,7 +523,7 @@ static Datum plc_datum_from_composite(pg_attribute_unused() struct PLyObToDatum 
 	 * that info instead of looking it up every time a tuple is returned from
 	 * the function.
 	 */
-	tuple = PLyObject_ToTuple(&info, desc, plrv, false);
+/*	tuple = PLyObject_ToTuple(&info, desc, plrv, false);
 
 	PLy_typeinfo_dealloc(&info);
 
@@ -531,7 +531,7 @@ static Datum plc_datum_from_composite(pg_attribute_unused() struct PLyObToDatum 
 		rv = HeapTupleGetDatum(tuple);
 	else
 		rv = (Datum) 0;
-
+*/
 	return rv;
 }
 
@@ -581,7 +581,7 @@ plc_input_datum_func(plcTypeInfo *arg, Oid typeOid, HeapTuple typeTup)
 	if (arg->is_rowtype > 0)
 		elog(ERROR, "PLyTypeInfo struct is initialized for Tuple");
 	arg->is_rowtype = 0;
-	PLy_input_datum_func2(&(arg->in.d), typeOid, typeTup);
+	plc_input_datum_func2(&(arg->in.d), typeOid, typeTup);
 }
 
 void
@@ -712,7 +712,7 @@ plcList_FromArray_recurse(plcDatumToOb *elm, int *dims, int ndim, int dim,
 		{
 			PyObject   *sublist;
 
-			sublist = PLyList_FromArray_recurse(elm, dims, ndim, dim + 1,
+			sublist = plcList_FromArray_recurse(elm, dims, ndim, dim + 1,
 											 dataptr_p, bitmap_p, bitmask_p);
 			PyList_SET_ITEM(list, i, sublist);
 		}
@@ -771,7 +771,7 @@ void
 plc_output_datum_func(plcTypeInfo *arg, HeapTuple typeTup)
 {
 	if (arg->is_rowtype > 0)
-		elog(ERROR, "PLyTypeInfo struct is initialized for a Tuple");
+		elog(ERROR, "plcTypeInfo struct is initialized for a Tuple");
 	arg->is_rowtype = 0;
 	plc_output_datum_func2(&(arg->out.d), typeTup);
 }
@@ -818,7 +818,7 @@ plc_output_datum_func2(plcObToDatum *arg, HeapTuple typeTup)
 	/* Composite types need their own input routine, though */
 	//if (typeStruct->typtype == TYPTYPE_COMPOSITE)
 	//{
-	//	arg->func = PLyObject_ToComposite;
+	//	arg->func = plcObject_ToComposite;
 	//}
 
 	/*if (element_type)
@@ -827,7 +827,7 @@ plc_output_datum_func2(plcObToDatum *arg, HeapTuple typeTup)
 		Oid			funcid;
 
 		if (type_is_rowtype(element_type))
-			arg->func = PLyObject_ToComposite;
+			arg->func = plcObject_ToComposite;
 
 		arg->elm = PLy_malloc0(sizeof(*arg->elm));
 		arg->elm->func = arg->func;

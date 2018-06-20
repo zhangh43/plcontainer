@@ -408,7 +408,7 @@ static void fill_callreq_arguments(FunctionCallInfo fcinfo, plcProcedure *proc, 
 			req->args[i].data.value = NULL;
 		} else {
 			req->args[i].data.isnull = 0;
-			req->args[i].data.value = proc->args[i].in.d.func(&(proc->args[i].in.d,fcinfo->arg[i]));
+			req->args[i].data.value = proc->args[i].in.d.func(&(proc->args[i].in.d),fcinfo->arg[i]);
 		}
 	}
 }
