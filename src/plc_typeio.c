@@ -459,7 +459,7 @@ static Datum plc_datum_from_bytea_ptr(pg_attribute_unused() struct plcObToDatum 
 }
 
 static Datum plc_datum_from_array(pg_attribute_unused() struct plcObToDatum *arg, pg_attribute_unused() int32 typmod, char *input, pg_attribute_unused() bool inarray) {
-	Datum dvalue;
+	//Datum dvalue;
 	/*Datum *elems;
 	ArrayType *array = NULL;
 	int *lbs = NULL;
@@ -502,12 +502,12 @@ static Datum plc_datum_from_array(pg_attribute_unused() struct plcObToDatum *arg
 	pfree(lbs);
 	pfree(elems);*/
 
-	return dvalue;
+	return  (Datum) 0;
 }
 
 static Datum plc_datum_from_composite(pg_attribute_unused() struct plcObToDatum *arg, pg_attribute_unused() int32 typmod, char *input, pg_attribute_unused() bool inarray) {
-	HeapTuple	tuple = NULL;
-	Datum		rv;
+	//HeapTuple	tuple = NULL;
+	//Datum		rv;
 //	PLyTypeInfo info;
 //	TupleDesc	desc;
 
@@ -537,7 +537,7 @@ static Datum plc_datum_from_composite(pg_attribute_unused() struct plcObToDatum 
 	else
 		rv = (Datum) 0;
 */
-	return rv;
+	return  (Datum) 0;
 }
 
 plcDatatype plc_get_datatype_from_oid(Oid oid) {
@@ -661,40 +661,7 @@ plc_input_datum_func2(plcDatumToOb *arg, Oid typeOid, HeapTuple typeTup)
 char *
 plcList_FromArray(plcDatumToOb *arg, Datum d)
 {
-	ArrayType  *array = DatumGetArrayTypeP(d);
-	plcDatumToOb *elm = arg->elm;
-	int			ndim;
-	int		   *dims;
-	char	   *dataptr;
-	bits8	   *bitmap;
-	int			bitmask;
-
-	if (ARR_NDIM(array) == 0)
-		return PyList_New(0);
-
-	/* Array dimensions and left bounds */
-	ndim = ARR_NDIM(array);
-	dims = ARR_DIMS(array);
-	Assert(ndim < MAXDIM);
-
-	/*
-	 * We iterate the SQL array in the physical order it's stored in the
-	 * datum. For example, for a 3-dimensional array the order of iteration would
-	 * be the following: [0,0,0] elements through [0,0,k], then [0,1,0] through
-	 * [0,1,k] till [0,m,k], then [1,0,0] through [1,0,k] till [1,m,k], and so on.
-	 *
-	 * In Python, there are no multi-dimensional lists as such, but they are
-	 * represented as a list of lists. So a 3-d array of [n,m,k] elements is a
-	 * list of n m-element arrays, each element of which is k-element array.
-	 * PLyList_FromArray_recurse() builds the Python list for a single
-	 * dimension, and recurses for the next inner dimension.
-	 */
-	dataptr = ARR_DATA_PTR(array);
-	bitmap = ARR_NULLBITMAP(array);
-	bitmask = 1;
-
-	return plcList_FromArray_recurse(elm, dims, ndim, 0,
-									 &dataptr, &bitmap, &bitmask);
+	return NULL;
 }
 
 char *
