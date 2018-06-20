@@ -152,6 +152,9 @@ plcontainer_procedure_create(FunctionCallInfo fcinfo, HeapTuple procTup, Oid fn_
 	proc->retset = fcinfo->flinfo->fn_retset;
 
 	proc->hasChanged = 1;
+	proc->nargs = 0;
+	proc->src = NULL;
+	proc->argnames = NULL;
 
 	procStruct = (Form_pg_proc) GETSTRUCT(procTup);//TODO delete
 	fill_type_info(fcinfo, procStruct->prorettype, &proc->result);
