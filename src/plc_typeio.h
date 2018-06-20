@@ -154,4 +154,10 @@ char *fill_type_value(Datum funcArg, plcTypeInfo *argType);
 
 plcDatatype plc_get_datatype_from_oid(Oid oid);
 
+char *
+plcList_FromArray(plcDatumToOb *arg, Datum d);
+char *
+plcList_FromArray_recurse(plcDatumToOb *elm, int *dims, int ndim, int dim,
+						  char **dataptr_p, bits8 **bitmap_p, int *bitmask_p);
+
 #endif /* PLC_TYPEIO_H */

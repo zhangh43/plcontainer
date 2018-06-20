@@ -427,17 +427,22 @@ static Datum plc_datum_from_float8_numeric(pg_attribute_unused() struct plcObToD
 }
 
 static Datum plc_datum_from_text(pg_attribute_unused() struct plcObToDatum *arg, pg_attribute_unused() int32 typmod, char *input, pg_attribute_unused() bool inarray) {
-	return OidFunctionCall3(type->input,
-	                        CStringGetDatum(input),
-	                        type->typelem,
-	                        type->typmod);
+
+	return InputFunctionCall(&arg->typfunc,
+							   input,
+							   arg->typioparam,
+							   typmod);
 }
 
 static Datum plc_datum_from_text_ptr(pg_attribute_unused() struct plcObToDatum *arg, pg_attribute_unused() int32 typmod, char *input, pg_attribute_unused() bool inarray) {
-	return OidFunctionCall3(type->input,
+	/*return OidFunctionCall3(type->input,
 	                        CStringGetDatum(*((char **) input)),
 	                        type->typelem,
-	                        type->typmod);
+	                        type->typmod);*/
+	return InputFunctionCall(&arg->typfunc,
+								   input,
+								   arg->typioparam,
+								   typmod);
 }
 
 static Datum plc_datum_from_bytea(pg_attribute_unused() struct plcObToDatum *arg, pg_attribute_unused() int32 typmod, char *input, pg_attribute_unused() bool inarray) {
@@ -450,12 +455,12 @@ static Datum plc_datum_from_bytea(pg_attribute_unused() struct plcObToDatum *arg
 }
 
 static Datum plc_datum_from_bytea_ptr(pg_attribute_unused() struct plcObToDatum *arg, pg_attribute_unused() int32 typmod, char *input, pg_attribute_unused() bool inarray) {
-	return plc_datum_from_bytea(*((char **) input), type);
+	return plc_datum_from_bytea(arg, typmod, *((char **) input), inarray);
 }
 
 static Datum plc_datum_from_array(pg_attribute_unused() struct plcObToDatum *arg, pg_attribute_unused() int32 typmod, char *input, pg_attribute_unused() bool inarray) {
 	Datum dvalue;
-	Datum *elems;
+	/*Datum *elems;
 	ArrayType *array = NULL;
 	int *lbs = NULL;
 	int i;
@@ -495,7 +500,7 @@ static Datum plc_datum_from_array(pg_attribute_unused() struct plcObToDatum *arg
 	dvalue = PointerGetDatum(array);
 
 	pfree(lbs);
-	pfree(elems);
+	pfree(elems);*/
 
 	return dvalue;
 }
@@ -533,10 +538,6 @@ static Datum plc_datum_from_composite(pg_attribute_unused() struct plcObToDatum 
 		rv = (Datum) 0;
 */
 	return rv;
-}
-
-static Datum plc_datum_from_udt_ptr(char *input, plcTypeInfo *type) {
-	return plc_datum_from_udt(*((char **) input), type);
 }
 
 plcDatatype plc_get_datatype_from_oid(Oid oid) {
@@ -640,7 +641,7 @@ plc_input_datum_func2(plcDatumToOb *arg, Oid typeOid, HeapTuple typeTup)
 			break;
 	}
 
-	if (element_type)
+	/*if (element_type)
 	{
 		char		dummy_delim;
 		Oid			funcid;
@@ -654,7 +655,7 @@ plc_input_datum_func2(plcDatumToOb *arg, Oid typeOid, HeapTuple typeTup)
 						 &arg->elm->typlen, &arg->elm->typbyval, &arg->elm->typalign, &dummy_delim,
 						 &arg->elm->typioparam, &funcid);
 		perm_fmgr_info(funcid, &arg->elm->typfunc);
-	}
+	}*/
 }
 
 char *
@@ -700,69 +701,7 @@ char *
 plcList_FromArray_recurse(plcDatumToOb *elm, int *dims, int ndim, int dim,
 						  char **dataptr_p, bits8 **bitmap_p, int *bitmask_p)
 {
-	int			i;
-	PyObject   *list;
-
-	list = PyList_New(dims[dim]);
-
-	if (dim < ndim - 1)
-	{
-		/* Outer dimension. Recurse for each inner slice. */
-		for (i = 0; i < dims[dim]; i++)
-		{
-			PyObject   *sublist;
-
-			sublist = plcList_FromArray_recurse(elm, dims, ndim, dim + 1,
-											 dataptr_p, bitmap_p, bitmask_p);
-			PyList_SET_ITEM(list, i, sublist);
-		}
-	}
-	else
-	{
-		/*
-		 * Innermost dimension. Fill the list with the values from the array
-		 * for this slice.
-		 */
-		char	   *dataptr = *dataptr_p;
-		bits8	   *bitmap = *bitmap_p;
-		int			bitmask = *bitmask_p;
-
-		for (i = 0; i < dims[dim]; i++)
-		{
-			/* checking for NULL */
-			if (bitmap && (*bitmap & bitmask) == 0)
-			{
-				Py_INCREF(Py_None);
-				PyList_SET_ITEM(list, i, Py_None);
-			}
-			else
-			{
-				Datum		itemvalue;
-
-				itemvalue = fetch_att(dataptr, elm->typbyval, elm->typlen);
-				PyList_SET_ITEM(list, i, elm->func(elm, itemvalue));
-				dataptr = att_addlength_pointer(dataptr, elm->typlen, dataptr);
-				dataptr = (char *) att_align_nominal(dataptr, elm->typalign);
-			}
-
-			/* advance bitmap pointer if any */
-			if (bitmap)
-			{
-				bitmask <<= 1;
-				if (bitmask == 0x100 /* (1<<8) */ )
-				{
-					bitmap++;
-					bitmask = 1;
-				}
-			}
-		}
-
-		*dataptr_p = dataptr;
-		*bitmap_p = bitmap;
-		*bitmask_p = bitmask;
-	}
-
-	return list;
+	return NULL;
 }
 
 
