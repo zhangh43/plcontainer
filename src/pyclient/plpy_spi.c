@@ -310,7 +310,7 @@ static plcMessage *receive_from_frontend() {
 	int res = 0;
 	plcConn *conn = plcconn_global;
 
-	res = plcontainer_channel_receive(conn, &resp, MT_CALLREQ_BIT | MT_RESULT_BIT | MT_SUBTRAN_RESULT_BIT);
+	res = plcontainer_channel_receive(conn, &resp, MT_CALLREQ_BIT | MT_RESULT_BIT | MT_SUBTRAN_RESULT_BIT| MT_EXCEPTION_BIT);
 	if (res < 0) {
 		raise_execution_error("Error receiving data from the frontend, %d", res);
 		return NULL;
