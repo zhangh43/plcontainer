@@ -234,6 +234,15 @@ plcMsgCallreq *plcontainer_generate_call_request(FunctionCallInfo fcinfo, plcPro
 	req->logLevel = log_min_messages;
 	req->objectid = proc->funcOid;
 	req->hasChanged = proc->hasChanged;
+	/*
+	 * Python understands almost all PostgreSQL encoding names, but it doesn't
+	 * know SQL_ASCII.
+	 * TODO: should send db encoding for every query
+	 */
+	if (GetDatabaseEncoding() == PG_SQL_ASCII)
+		req->serverenc = "ascii";
+	else
+		req->serverenc = GetDatabaseEncodingName();
 	copy_type_info(&req->retType, &proc->result);
 
 	fill_callreq_arguments(fcinfo, proc, req);

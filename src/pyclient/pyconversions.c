@@ -14,6 +14,8 @@
 
 #include <Python.h>
 
+static PyObject *PLyUnicode_Bytes(PyObject *unicode);
+
 static PyObject *plc_pyobject_from_int1(char *input, plcPyType *type);
 
 static PyObject *plc_pyobject_from_int2(char *input, plcPyType *type);
@@ -768,4 +770,21 @@ void plc_py_copy_type(plcType *type, plcPyType *pytype) {
 	} else {
 		type->subTypes = NULL;
 	}
+}
+
+
+
+/*
+ * Convert a Python unicode object to a Python string/bytes object in
+ * PostgreSQL server encoding.	Reference ownership is passed to the
+ * caller.
+ */
+static PyObject *
+PLyUnicode_Bytes(PyObject *unicode)
+{
+	PyObject   *rv;
+	rv = PyUnicode_AsEncodedString(unicode, serverenc, "strict");
+	if (rv == NULL)
+		PLy_elog(ERROR, "could not convert Python Unicode object to PostgreSQL server encoding");
+	return rv;
 }
