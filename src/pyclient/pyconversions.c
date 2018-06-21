@@ -785,6 +785,6 @@ PLyUnicode_Bytes(PyObject *unicode)
 	PyObject   *rv;
 	rv = PyUnicode_AsEncodedString(unicode, serverenc, "strict");
 	if (rv == NULL)
-		PLy_elog(ERROR, "could not convert Python Unicode object to PostgreSQL server encoding");
+		plc_elog(ERROR, "could not convert Python Unicode object to PostgreSQL server encoding");
 	return rv;
 }
