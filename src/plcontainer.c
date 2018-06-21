@@ -364,7 +364,7 @@ static void plcontainer_process_sql(plcMsgSQL *msg, plcConn *conn, plcProcInfo *
 				free_rawmsg((plcMsgRaw *) res);
 				break;
 			case MT_EXCEPTION:
-				free_error((plcMsgRaw *) res);
+				free_error((plcMsgError *) res);
 				break;
 			default:
 				ereport(ERROR,

@@ -325,6 +325,8 @@ static plcMessage *receive_from_frontend() {
 			break;
 		case MT_SUBTRAN_RESULT:
 			break;
+		case MT_EXCEPTION_BIT:
+			break;
 		default:
 			raise_execution_error("Client cannot process message type %c.\n"
 				                      "Should never reach here.", resp->msgtype);
