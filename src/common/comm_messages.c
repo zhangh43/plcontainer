@@ -239,7 +239,8 @@ int plc_get_type_length(plcDatatype dt) {
 			res = 2;
 			break;
 		case PLC_DATA_INT4:
-			res = 4;
+			res = 8;
+			//res = 4;
 			break;
 		case PLC_DATA_INT8:
 			res = 8;

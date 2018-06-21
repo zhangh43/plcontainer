@@ -300,7 +300,8 @@ static int send_raw_object(plcConn *conn, plcType *type, rawdata *obj) {
 				res |= send_int16(conn, *((int16 *) obj->value));
 				break;
 			case PLC_DATA_INT4:
-				res |= send_int32(conn, *((int32 *) obj->value));
+				res |= send_cstring(conn, obj->value);
+				//res |= send_int32(conn, *((int32 *) obj->value));
 				break;
 			case PLC_DATA_INT8:
 				res |= send_int64(conn, *((int64 *) obj->value));
@@ -515,8 +516,9 @@ static int receive_raw_object(plcConn *conn, plcType *type, rawdata *obj) {
 				res |= receive_int16(conn, (int16 *) obj->value);
 				break;
 			case PLC_DATA_INT4:
-				obj->value = (char *) pmalloc(4);
-				res |= receive_int32(conn, (int32 *) obj->value);
+				res |= receive_cstring(conn, &obj->value);
+				//obj->value = (char *) pmalloc(4);
+				//res |= receive_int32(conn, (int32 *) obj->value);
 				break;
 			case PLC_DATA_INT8:
 				obj->value = (char *) pmalloc(8);

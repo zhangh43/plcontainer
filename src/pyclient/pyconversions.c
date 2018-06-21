@@ -606,7 +606,8 @@ plcPyOutputFunc Ply_get_output_function(plcDatatype dt) {
 			res = plc_pyobject_as_int2;
 			break;
 		case PLC_DATA_INT4:
-			res = plc_pyobject_as_int4;
+			res = plc_pyobject_as_text;
+			//res = plc_pyobject_as_int4;
 			break;
 		case PLC_DATA_INT8:
 			res = plc_pyobject_as_int8;
