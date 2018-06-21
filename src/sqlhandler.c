@@ -415,7 +415,7 @@ plcMessage *handle_sql_message(plcMsgSQL *msg, plcConn *conn, plcProcInfo *pinfo
 	/* an exception to be thrown
 	 * err will be freed after send.
 	 */
-	err = malloc(sizeof(plcMsgError));
+	err = palloc(sizeof(plcMsgError));
 	err->msgtype = MT_EXCEPTION;
 	err->message = PLy_strdup(SPI_result_code_string(retval));
 	err->stacktrace = NULL;
