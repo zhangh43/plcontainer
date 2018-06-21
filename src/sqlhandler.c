@@ -30,7 +30,7 @@
 #include "sqlhandler.h"
 #include "subtransaction_handler.h"
 
-static plcMsgResult *create_sql_result(bool isSelect);
+static plcMsgResult *create_sql_result(bool isSelect, const char* error_msg);
 
 static plcMsgRaw *create_prepare_result(int64 pplan, plcDatatype *type, int nargs);
 
@@ -38,15 +38,38 @@ void deinit_pplan_slots(plcConn *conn);
 
 void init_pplan_slots(plcConn *conn);
 
-static plcMsgResult *create_sql_result(bool isSelect) {
+
+plcMsgError *plcLastErrMessage = NULL;
+
+void *spi_error_callback() {
+	plcMsgError *msg = plcLastErrMessage;
+	plcLastErrMessage = NULL;
+	return (void *) msg;
+}
+
+
+static plcMsgResult *create_sql_result(bool isSelect, const char* error_msg) {
 	plcMsgResult *result;
 	uint32 i, j;
 	plcTypeInfo *resTypes = NULL;
 
 	result = palloc(sizeof(plcMsgResult));
 	result->msgtype = MT_RESULT;
-	result->rows = SPI_processed;
+	if(error_msg != NULL) {
+		plcMsgError *err;
+		/* an exception to be thrown
+		 * err will be freed after send.
+		 */
+		err = malloc(sizeof(plcMsgError));
+		err->msgtype = MT_EXCEPTION;
+		err->message = PLy_strdup(error_msg);
+		err->stacktrace = NULL;
 
+		plcLastErrMessage = err;
+	}
+	result->exception_callback = spi_error_callback;
+
+	result->rows = SPI_processed;
 	if (!isSelect) {
 		result->cols = 0;
 		result->types = NULL;
@@ -323,20 +346,16 @@ plcMessage *handle_sql_message(plcMsgSQL *msg, plcConn *conn, plcProcInfo *pinfo
 					case SPI_OK_DELETE_RETURNING:
 					case SPI_OK_UPDATE_RETURNING:
 						/* some data was returned back */
-						result = (plcMessage *) create_sql_result(true);
+						result = (plcMessage *) create_sql_result(true, NULL);
 						break;
 					case SPI_OK_INSERT:
 					case SPI_OK_DELETE:
 					case SPI_OK_UPDATE:
 						/* only return number of rows that are processed */
-						result = (plcMessage *) create_sql_result(false);
+						result = (plcMessage *) create_sql_result(false, NULL);
 						break;
 					default:
-						plc_elog(ERROR, "Cannot handle sql ('%s') with fn_readonly (%d) "
-									"and limit ("
-									INT64_FORMAT
-									"). Detail: %s", msg->statement,
-								     pinfo->fn_readonly, msg->limit, SPI_result_code_string(retval));
+						result = (plcMessage *) create_sql_result(false, SPI_result_code_string(retval));
 						break;
 				}
 				SPI_freetuptable(SPI_tuptable);

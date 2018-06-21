@@ -7,6 +7,7 @@
  */
 #include "plpy_spi.h"
 
+#include <assert.h>
 #include "common/comm_channel.h"
 #include "common/comm_utils.h"
 #include "pycall.h"
@@ -695,7 +696,7 @@ static PyObject *
 PLy_spi_execute_query(char *query, long limit) {
 	uint32 i, j;
 	plcMsgSQL msg;
-	plcMsgResult *resp;
+	plcMessage *baseResp;
 	PyObject *pyresult,
 		*pydict,
 		*pyval;
@@ -709,12 +710,18 @@ PLy_spi_execute_query(char *query, long limit) {
 
 	plcontainer_channel_send(conn, (plcMessage *) &msg);
 
-	resp = (plcMsgResult *) receive_from_frontend();
-	if (resp == NULL) {
+	baseResp = receive_from_frontend();
+	if (baseResp == NULL) {
 		raise_execution_error("Error receiving data from frontend");
 		return NULL;
 	}
+	if(baseResp->types == MT_EXCEPTION) {
+		plcMsgError resp = (plcMsgError *)baseResp;
+		PLy_exception_set(PLy_exc_spi_error, "SPI_execute failed: %s", resp->message);
+	}
 
+	assert(baseResp->types == MT_RESULT);
+	plcMsgResult* resp = (plcMsgResult *)baseResp;
 	/*
 	 * For INSERT, UPDATE and DELETE no column will be returned,
 	 * so if resp->cols > 0, it must be SELECT statment.
