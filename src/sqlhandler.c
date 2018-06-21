@@ -430,8 +430,8 @@ plcMessage *handle_sql_message(plcMsgSQL *msg, plcConn *conn, plcProcInfo *pinfo
 		RollbackAndReleaseCurrentSubTransaction();
 		MemoryContextSwitchTo(oldcontext);
 		CurrentResourceOwner = oldowner;
-		
-		PG_RE_THROW();
+		result = (plcMessage *) create_sql_result(false, SPI_result_code_string(retval));
+		return result;
 	}
 	PG_END_TRY();
 
