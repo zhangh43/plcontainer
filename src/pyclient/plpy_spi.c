@@ -366,7 +366,7 @@ PLy_spi_execute_plan(PyObject *ob, PyObject *list, long limit) {
 	uint32 i, j;
 	int32 nargs;
 	plcMsgSQL msg;
-	plcMsgResult *resp;
+	plcMessage *baseResp;
 	PyObject *pyresult,
 			 *pydict,
 			 *pyval;
@@ -430,11 +430,20 @@ PLy_spi_execute_plan(PyObject *ob, PyObject *list, long limit) {
 	plcontainer_channel_send(conn, (plcMessage *) &msg);
 	free_arguments(args, nargs, false, false);
 
-	resp = (plcMsgResult *) receive_from_frontend();
-	if (resp == NULL) {
-		PLy_exception_set(PLy_exc_spi_error, "Error receiving data from frontend");
+	baseResp = receive_from_frontend();
+	if (baseResp == NULL) {
+		raise_execution_error("Error receiving data from frontend");
 		return NULL;
 	}
+	plc_elog(LOG, "the rows is %hu", baseResp->msgtype);
+	if (baseResp->msgtype == MT_EXCEPTION) {
+		plcMsgError* resp = (plcMsgError *) baseResp;
+		PLy_exception_set(PLy_exc_spi_error, "SPI_execute failed: %s",
+				resp->message);
+	}
+
+	assert(baseResp->msgtype == MT_RESULT);
+	plcMsgResult* resp = (plcMsgResult *) baseResp;
 
 	/*
 	 * For INSERT, UPDATE and DELETE no column will be returned,
@@ -715,6 +724,7 @@ PLy_spi_execute_query(char *query, long limit) {
 		raise_execution_error("Error receiving data from frontend");
 		return NULL;
 	}
+	plc_elog(LOG, "the rows is %hu", baseResp->msgtype);
 	if(baseResp->msgtype == MT_EXCEPTION) {
 		plcMsgError* resp = (plcMsgError *)baseResp;
 		PLy_exception_set(PLy_exc_spi_error, "SPI_execute failed: %s", resp->message);
