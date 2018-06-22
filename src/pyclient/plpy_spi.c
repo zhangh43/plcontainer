@@ -729,7 +729,7 @@ PLy_spi_execute_query(char *query, long limit) {
 	plc_elog(LOG, "the rows is %hu", baseResp->msgtype);
 	if(baseResp->msgtype == MT_EXCEPTION) {
 		plcMsgError* resp = (plcMsgError *)baseResp;
-		PLy_exception_set(PLy_exc_spi_error, "SPI_execute failed: %s", resp->message);
+		PLy_exception_set(PLy_exc_spi_error, "SPI_execute failed");
 		return NULL;
 	}
 

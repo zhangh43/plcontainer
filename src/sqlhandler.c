@@ -415,7 +415,7 @@ plcMessage *handle_sql_message(plcMsgSQL *msg, plcConn *conn, plcProcInfo *pinfo
 		 */
 		err = palloc(sizeof(plcMsgError));
 		err->msgtype = MT_EXCEPTION;
-		err->message = pstrdup("SPI execution failed");
+		err->message = NULL;
 		err->stacktrace = NULL;
 
 		result = (plcMessage *) err;
