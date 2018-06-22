@@ -406,6 +406,12 @@ plcMessage *handle_sql_message(plcMsgSQL *msg, plcConn *conn, plcProcInfo *pinfo
 	}
 	PG_CATCH();
 	{
+		ErrorData *edata;
+		/* Save error info */
+		MemoryContextSwitchTo(oldcontext);
+		edata = CopyErrorData();
+		FlushErrorState();
+
 		/* Make sure the memroy context is in correct position */
 		RollbackAndReleaseCurrentSubTransaction();
 		MemoryContextSwitchTo(oldcontext);
@@ -418,7 +424,9 @@ plcMessage *handle_sql_message(plcMsgSQL *msg, plcConn *conn, plcProcInfo *pinfo
 		 */
 		err = palloc(sizeof(plcMsgError));
 		err->msgtype = MT_EXCEPTION;
-		err->message = NULL;
+		err->message = (char *) palloc(strlen(edata->message) + 1);
+		memcpy(err->message, edata->message, strlen(edata->message));
+		err->message[strlen(edata->message)] = '\0';
 		err->stacktrace = NULL;
 
 		result = (plcMessage *) err;

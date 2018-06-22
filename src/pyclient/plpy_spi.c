@@ -262,11 +262,16 @@ static int PLy_freeplan(PLyPlanObject *ob) {
 	plcontainer_channel_send(conn, (plcMessage *) &msg);
 	/* No need to free for msg after tx. */
 
-	res = plcontainer_channel_receive(conn, &resp, MT_RAW_BIT);
-	if (res < 0) {
-		raise_execution_error("Error receiving data from the frontend, %d", res);
-		return res;
+	resp = receive_from_frontend();
+	if (resp == NULL) {
+		raise_execution_error("Error receiving data from frontend");
+		return NULL;
 	}
+	if (resp->msgtype == MT_EXCEPTION) {
+		PLy_exception_set(PLy_exc_spi_error, "SPI_execute failed");
+		return NULL;
+	}
+
 
 	int32 *prv;
 	prv = (int32 *) (((plcMsgRaw *) resp)->data);
@@ -310,7 +315,7 @@ static plcMessage *receive_from_frontend() {
 	int res = 0;
 	plcConn *conn = plcconn_global;
 
-	res = plcontainer_channel_receive(conn, &resp, MT_CALLREQ_BIT | MT_RESULT_BIT | MT_SUBTRAN_RESULT_BIT| MT_EXCEPTION_BIT);
+	res = plcontainer_channel_receive(conn, &resp, MT_CALLREQ_BIT | MT_RESULT_BIT | MT_SUBTRAN_RESULT_BIT| MT_EXCEPTION_BIT| MT_RAW_BIT);
 	if (res < 0) {
 		raise_execution_error("Error receiving data from the frontend, %d", res);
 		return NULL;
@@ -326,6 +331,8 @@ static plcMessage *receive_from_frontend() {
 		case MT_SUBTRAN_RESULT:
 			break;
 		case MT_EXCEPTION:
+			break;
+		case MT_RAW:
 			break;
 		default:
 			raise_execution_error("Client cannot process message type %c.\n"
@@ -881,9 +888,13 @@ PyObject *PLy_spi_prepare(PyObject *self UNUSED, PyObject *args) {
 	plcontainer_channel_send(conn, (plcMessage *) &msg);
 	free_arguments(msg.args, msg.nargs, false, false);
 
-	res = plcontainer_channel_receive(conn, &resp, MT_RAW_BIT);
-	if (res < 0) {
-		PLy_exception_set(PLy_exc_spi_error, "Error receiving data from the frontend, %d", res);
+	resp = receive_from_frontend();
+	if (resp == NULL) {
+		raise_execution_error("Error receiving data from frontend");
+		return NULL;
+	}
+	if (resp->msgtype == MT_EXCEPTION) {
+		PLy_exception_set(PLy_exc_spi_error, "SPI_execute failed");
 		return NULL;
 	}
 
@@ -954,7 +965,7 @@ PLy_exception_set(PyObject *exc, const char *fmt, ...) {
 	va_end(ap);
 
 	plc_elog(DEBUG1, "Python caught an exception: %s", buf);
-
+	raise_execution_error("Error receiving data from frontend: %s", buf);
 	PyErr_SetString(exc, buf);
 }
 
