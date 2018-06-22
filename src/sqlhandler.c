@@ -332,7 +332,7 @@ plcMessage *handle_sql_message(plcMsgSQL *msg, plcConn *conn, plcProcInfo *pinfo
 						result = (plcMessage *) create_sql_result(false);
 						break;
 					default:
-						result = (plcMessage *) create_sql_result(false);
+						plc_elog(ERROR,"old error");
 						break;
 				}
 				SPI_freetuptable(SPI_tuptable);
@@ -404,23 +404,26 @@ plcMessage *handle_sql_message(plcMsgSQL *msg, plcConn *conn, plcProcInfo *pinfo
 	PG_CATCH();
 	{
 		/* Make sure the memroy context is in correct position */
-		MemoryContextSwitchTo(oldcontext);
 		RollbackAndReleaseCurrentSubTransaction();
 		MemoryContextSwitchTo(oldcontext);
 		CurrentResourceOwner = oldowner;
 
+		plcMsgError *err;
+
+		/* an exception to be thrown
+		 * err will be freed after send.
+		 */
+		err = palloc(sizeof(plcMsgError));
+		err->msgtype = MT_EXCEPTION;
+		err->message = pstrdup("SPI execution failed");
+		err->stacktrace = NULL;
+
+		result = (plcMessage *) err;
+		return result;
+
 	}
 	PG_END_TRY();
-	plcMsgError *err;
-	/* an exception to be thrown
-	 * err will be freed after send.
-	 */
-	err = palloc(sizeof(plcMsgError));
-	err->msgtype = MT_EXCEPTION;
-	err->message = PLy_strdup(SPI_result_code_string(retval));
-	err->stacktrace = NULL;
 
-	result = (plcMessage *) err;
 	return result;
 }
 

@@ -31,6 +31,18 @@ PLy_strdup(const char *str)
 	return result;
 }
 
+char *
+pstrdup(const char *str)
+{
+	char	   *result;
+	size_t		len;
+
+	len = strlen(str) + 1;
+	result = palloc(len);
+	memcpy(result, str, len);
+
+	return result;
+}
 
 char *plc_top_strdup(char *str) {
 	int len = strlen(str);

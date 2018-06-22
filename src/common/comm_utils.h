@@ -146,6 +146,8 @@ char *plc_top_strdup(char *str);
 
 char *PLy_strdup(const char *);
 
+char *pstrdup(const char *);
+
 void *spi_error_callback(void);
 
 #endif /* PLC_CLIENT */
