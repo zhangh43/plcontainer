@@ -7,6 +7,7 @@
  */
 #include "plpy_spi.h"
 
+#include <assert.h>
 #include "common/comm_channel.h"
 #include "common/comm_utils.h"
 #include "pycall.h"
@@ -309,7 +310,7 @@ static plcMessage *receive_from_frontend() {
 	int res = 0;
 	plcConn *conn = plcconn_global;
 
-	res = plcontainer_channel_receive(conn, &resp, MT_CALLREQ_BIT | MT_RESULT_BIT | MT_SUBTRAN_RESULT_BIT);
+	res = plcontainer_channel_receive(conn, &resp, MT_CALLREQ_BIT | MT_RESULT_BIT | MT_SUBTRAN_RESULT_BIT| MT_EXCEPTION_BIT);
 	if (res < 0) {
 		raise_execution_error("Error receiving data from the frontend, %d", res);
 		return NULL;
@@ -323,6 +324,8 @@ static plcMessage *receive_from_frontend() {
 		case MT_RESULT:
 			break;
 		case MT_SUBTRAN_RESULT:
+			break;
+		case MT_EXCEPTION:
 			break;
 		default:
 			raise_execution_error("Client cannot process message type %c.\n"
@@ -365,7 +368,7 @@ PLy_spi_execute_plan(PyObject *ob, PyObject *list, long limit) {
 	uint32 i, j;
 	int32 nargs;
 	plcMsgSQL msg;
-	plcMsgResult *resp;
+	plcMessage *baseResp;
 	PyObject *pyresult,
 			 *pydict,
 			 *pyval;
@@ -429,11 +432,18 @@ PLy_spi_execute_plan(PyObject *ob, PyObject *list, long limit) {
 	plcontainer_channel_send(conn, (plcMessage *) &msg);
 	free_arguments(args, nargs, false, false);
 
-	resp = (plcMsgResult *) receive_from_frontend();
-	if (resp == NULL) {
-		PLy_exception_set(PLy_exc_spi_error, "Error receiving data from frontend");
+	baseResp = receive_from_frontend();
+	if (baseResp == NULL) {
+		raise_execution_error("Error receiving data from frontend");
 		return NULL;
 	}
+	if (baseResp->msgtype == MT_EXCEPTION) {
+		PLy_exception_set(PLy_exc_spi_error, "SPI_execute failed");
+		return NULL;
+	}
+
+	assert(baseResp->msgtype == MT_RESULT);
+	plcMsgResult* resp = (plcMsgResult *) baseResp;
 
 	/*
 	 * For INSERT, UPDATE and DELETE no column will be returned,
@@ -695,7 +705,7 @@ static PyObject *
 PLy_spi_execute_query(char *query, long limit) {
 	uint32 i, j;
 	plcMsgSQL msg;
-	plcMsgResult *resp;
+	plcMessage *baseResp;
 	PyObject *pyresult,
 		*pydict,
 		*pyval;
@@ -709,12 +719,18 @@ PLy_spi_execute_query(char *query, long limit) {
 
 	plcontainer_channel_send(conn, (plcMessage *) &msg);
 
-	resp = (plcMsgResult *) receive_from_frontend();
-	if (resp == NULL) {
+	baseResp = receive_from_frontend();
+	if (baseResp == NULL) {
 		raise_execution_error("Error receiving data from frontend");
 		return NULL;
 	}
+	if(baseResp->msgtype == MT_EXCEPTION) {
+		PLy_exception_set(PLy_exc_spi_error, "SPI_execute failed");
+		return NULL;
+	}
 
+	assert(baseResp->msgtype == MT_RESULT);
+	plcMsgResult* resp = (plcMsgResult *)baseResp;
 	/*
 	 * For INSERT, UPDATE and DELETE no column will be returned,
 	 * so if resp->cols > 0, it must be SELECT statment.

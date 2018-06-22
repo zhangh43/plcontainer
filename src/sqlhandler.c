@@ -46,7 +46,6 @@ static plcMsgResult *create_sql_result(bool isSelect) {
 	result = palloc(sizeof(plcMsgResult));
 	result->msgtype = MT_RESULT;
 	result->rows = SPI_processed;
-
 	if (!isSelect) {
 		result->cols = 0;
 		result->types = NULL;
@@ -333,10 +332,10 @@ plcMessage *handle_sql_message(plcMsgSQL *msg, plcConn *conn, plcProcInfo *pinfo
 						break;
 					default:
 						plc_elog(ERROR, "Cannot handle sql ('%s') with fn_readonly (%d) "
-									"and limit ("
-									INT64_FORMAT
-									"). Detail: %s", msg->statement,
-								     pinfo->fn_readonly, msg->limit, SPI_result_code_string(retval));
+							"and limit ("
+							INT64_FORMAT
+							"). Detail: %s", msg->statement,
+							pinfo->fn_readonly, msg->limit, SPI_result_code_string(retval));
 						break;
 				}
 				SPI_freetuptable(SPI_tuptable);
@@ -403,16 +402,28 @@ plcMessage *handle_sql_message(plcMsgSQL *msg, plcConn *conn, plcProcInfo *pinfo
 		ReleaseCurrentSubTransaction();
 		MemoryContextSwitchTo(oldcontext);
 		CurrentResourceOwner = oldowner;
+		return result;
 	}
 	PG_CATCH();
 	{
 		/* Make sure the memroy context is in correct position */
-		MemoryContextSwitchTo(oldcontext);
 		RollbackAndReleaseCurrentSubTransaction();
 		MemoryContextSwitchTo(oldcontext);
 		CurrentResourceOwner = oldowner;
-		
-		PG_RE_THROW();
+
+		plcMsgError *err;
+
+		/* an exception send to container side, which will be freed after send.
+		 * TODO: we treat them as general SPI error now.
+		 */
+		err = palloc(sizeof(plcMsgError));
+		err->msgtype = MT_EXCEPTION;
+		err->message = NULL;
+		err->stacktrace = NULL;
+
+		result = (plcMessage *) err;
+		return result;
+
 	}
 	PG_END_TRY();
 
