@@ -246,7 +246,6 @@ PLy_plan_new(void) {
 
 /* SPI_freeplan(ob->pplan) */
 static int PLy_freeplan(PLyPlanObject *ob) {
-	int res;
 	plcMsgSQL msg;
 	plcMessage *resp;
 	plcConn *conn = plcconn_global;
@@ -269,10 +268,10 @@ static int PLy_freeplan(PLyPlanObject *ob) {
 		return NULL;
 	}
 	if (resp->msgtype == MT_EXCEPTION) {
-		plcMsgError* resp = (plcMsgError *) baseResp;
-		if (resp->message != NULL) {
+		plcMsgError* errorResp = (plcMsgError *) resp;
+		if (errorResp->message != NULL) {
 			PLy_exception_set(PLy_exc_spi_error,
-					"SPI free plan failed due to %s", resp->message);
+					"SPI free plan failed due to %s", errorResp->message);
 		} else {
 			PLy_exception_set(PLy_exc_spi_error, "SPI free plan failed.");
 		}
@@ -852,7 +851,7 @@ PyObject *PLy_spi_prepare(PyObject *self UNUSED, PyObject *args) {
 	plcMessage *resp;
 	plcConn *conn = plcconn_global;
 	char *query;
-	int nargs, res;
+	int nargs;
 	PLyPlanObject *py_plan;
 	PyObject *list = NULL;
 	PyObject *optr = NULL;
@@ -913,10 +912,10 @@ PyObject *PLy_spi_prepare(PyObject *self UNUSED, PyObject *args) {
 		return NULL;
 	}
 	if (resp->msgtype == MT_EXCEPTION) {
-		plcMsgError* resp = (plcMsgError *) baseResp;
-		if (resp->message != NULL) {
+		plcMsgError* errorResp = (plcMsgError *) resp;
+		if (errorResp->message != NULL) {
 			PLy_exception_set(PLy_exc_spi_error,
-					"SPI prepare failed due to %s", resp->message);
+					"SPI prepare failed due to %s", errorResp->message);
 		} else {
 			PLy_exception_set(PLy_exc_spi_error, "SPI prepare failed.");
 		}
