@@ -322,15 +322,18 @@ plcMessage *handle_sql_message(plcMsgSQL *msg, plcConn *conn, plcProcInfo *pinfo
 					case SPI_OK_DELETE_RETURNING:
 					case SPI_OK_UPDATE_RETURNING:
 						/* some data was returned back */
+						MemoryContextSwitchTo(oldcontext);
 						result = (plcMessage *) create_sql_result(true);
 						break;
 					case SPI_OK_INSERT:
 					case SPI_OK_DELETE:
 					case SPI_OK_UPDATE:
 						/* only return number of rows that are processed */
+						MemoryContextSwitchTo(oldcontext);
 						result = (plcMessage *) create_sql_result(false);
 						break;
 					default:
+						MemoryContextSwitchTo(oldcontext);
 						plc_elog(ERROR, "Cannot handle sql ('%s') with fn_readonly (%d) "
 							"and limit ("
 							INT64_FORMAT
@@ -387,11 +390,13 @@ plcMessage *handle_sql_message(plcMsgSQL *msg, plcConn *conn, plcProcInfo *pinfo
 					plc_elog(LOG, "SPI_prepare() fails for '%s', with %d arguments: %s",
 							     msg->statement, plc_plan->nargs, SPI_result_code_string(SPI_result));
 					}
+				MemoryContextSwitchTo(oldcontext);
 				result = (plcMessage *) create_prepare_result((int64) &plc_plan->plan, argTypes,
 				                                              plc_plan->nargs);
 				break;
 			case SQL_TYPE_UNPREPARE:
 				retval = free_plc_plan(conn, (int64) msg->pplan);
+				MemoryContextSwitchTo(oldcontext);
 				result = (plcMessage *) create_unprepare_result(retval);
 				break;
 			default:
