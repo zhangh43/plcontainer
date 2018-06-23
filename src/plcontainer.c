@@ -326,9 +326,10 @@ static Datum plcontainer_process_result(FunctionCallInfo fcinfo,
  * Processing client log message
  */
 static void plcontainer_process_log(plcMsgLog *log) {
-	ereport(log->level,
+	/*ereport(log->level,
 	        (errcode(ERRCODE_NO_DATA),
-		        errmsg("%s", log->message)));
+		        errmsg("%s", log->message)));*/
+	plc_elog(log->level, "%s",log->message);
 	if (log->message != NULL)
 		pfree(log->message);
 }
