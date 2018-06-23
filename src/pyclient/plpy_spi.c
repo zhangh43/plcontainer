@@ -265,7 +265,7 @@ static int PLy_freeplan(PLyPlanObject *ob) {
 	resp = receive_from_frontend();
 	if (resp == NULL) {
 		raise_execution_error("Error receiving data from frontend");
-		return NULL;
+		return -1;
 	}
 	if (resp->msgtype == MT_EXCEPTION) {
 		plcMsgError* errorResp = (plcMsgError *) resp;
@@ -275,13 +275,15 @@ static int PLy_freeplan(PLyPlanObject *ob) {
 		} else {
 			PLy_exception_set(PLy_exc_spi_error, "SPI free plan failed.");
 		}
-		return NULL;
+		return -1;
 	}
 
 
 	int32 *prv;
 	prv = (int32 *) (((plcMsgRaw *) resp)->data);
-	res = *prv;
+	if(*prv != 0) {
+		PLy_exception_set(PLy_exc_spi_error, "SPI free plan failed.");
+	}
 
 	free_rawmsg((plcMsgRaw *) resp);
 	return 0;
