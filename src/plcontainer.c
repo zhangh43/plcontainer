@@ -358,10 +358,10 @@ static void plcontainer_process_sql(plcMsgSQL *msg, plcConn *conn, plcProcInfo *
 			if (res->msgtype == MT_EXCEPTION) {
 				plcMsgError* errorResp = (plcMsgError *) res;
 				if (errorResp->message != NULL) {
-					plc_elog(ERROR, "Handle plpy message failed due to %s",
+					plc_elog(ERROR, "Handle spi message failed due to %s",
 							errorResp->message);
 				} else {
-					plc_elog(ERROR, "Handle plpy message failed.");
+					plc_elog(ERROR, "Handle spi message failed.");
 				}
 			} else {
 			plc_elog(ERROR, "Error sending data to the client. "
