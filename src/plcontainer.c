@@ -350,8 +350,23 @@ static void plcontainer_process_sql(plcMsgSQL *msg, plcConn *conn, plcProcInfo *
 	if (res != NULL) {
 		retval = plcontainer_channel_send(conn, res);
 		if (retval < 0) {
+			/*
+			 * SPI_execute may exit container(e.g. plpy.error)
+			 * in this case, we need to output the plpy.error message
+			 * to end user instead of 'Error sending data to the client'
+			 */
+			if (res->msgtype == MT_EXCEPTION) {
+				plcMsgError* errorResp = (plcMsgError *) res;
+				if (errorResp->message != NULL) {
+					plc_elog(ERROR, "Handle plpy message failed due to %s",
+							errorResp->message);
+				} else {
+					plc_elog(ERROR, "Handle plpy message failed.");
+				}
+			} else {
 			plc_elog(ERROR, "Error sending data to the client. "
 				"Maybe retry later.");
+			}
 			return;
 		}
 		switch (res->msgtype) {
