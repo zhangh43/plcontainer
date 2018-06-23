@@ -22,6 +22,7 @@ typedef struct PLySubtransactionObject {
 	bool exited;
 } PLySubtransactionObject;
 
+static plcMessage *receive_from_frontend();
 
 static PyObject *PLy_subtransaction_new(void);
 
