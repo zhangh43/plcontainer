@@ -268,7 +268,13 @@ static int PLy_freeplan(PLyPlanObject *ob) {
 		return NULL;
 	}
 	if (resp->msgtype == MT_EXCEPTION) {
-		PLy_exception_set(PLy_exc_spi_error, "SPI_execute failed");
+		plcMsgError* resp = (plcMsgError *) baseResp;
+		if (resp->message != NULL) {
+			PLy_exception_set(PLy_exc_spi_error,
+					"SPI free plan failed due to %s", resp->message);
+		} else {
+			PLy_exception_set(PLy_exc_spi_error, "SPI free plan failed.");
+		}
 		return NULL;
 	}
 
@@ -445,7 +451,13 @@ PLy_spi_execute_plan(PyObject *ob, PyObject *list, long limit) {
 		return NULL;
 	}
 	if (baseResp->msgtype == MT_EXCEPTION) {
-		PLy_exception_set(PLy_exc_spi_error, "SPI_execute failed");
+		plcMsgError* resp = (plcMsgError *) baseResp;
+		if (resp->message != NULL) {
+			PLy_exception_set(PLy_exc_spi_error,
+					"SPI execute plan failed due to %s", resp->message);
+		} else {
+			PLy_exception_set(PLy_exc_spi_error, "SPI execute plan failed.");
+		}
 		return NULL;
 	}
 
@@ -732,7 +744,13 @@ PLy_spi_execute_query(char *query, long limit) {
 		return NULL;
 	}
 	if(baseResp->msgtype == MT_EXCEPTION) {
-		PLy_exception_set(PLy_exc_spi_error, "SPI_execute failed");
+		plcMsgError* resp = (plcMsgError *) baseResp;
+		if (resp->message != NULL) {
+			PLy_exception_set(PLy_exc_spi_error,
+					"SPI execute query failed due to %s", resp->message);
+		} else {
+			PLy_exception_set(PLy_exc_spi_error, "SPI execute query failed.");
+		}
 		return NULL;
 	}
 
@@ -894,7 +912,13 @@ PyObject *PLy_spi_prepare(PyObject *self UNUSED, PyObject *args) {
 		return NULL;
 	}
 	if (resp->msgtype == MT_EXCEPTION) {
-		PLy_exception_set(PLy_exc_spi_error, "SPI_execute failed");
+		plcMsgError* resp = (plcMsgError *) baseResp;
+		if (resp->message != NULL) {
+			PLy_exception_set(PLy_exc_spi_error,
+					"SPI prepare failed due to %s", resp->message);
+		} else {
+			PLy_exception_set(PLy_exc_spi_error, "SPI prepare failed.");
+		}
 		return NULL;
 	}
 
@@ -965,7 +989,7 @@ PLy_exception_set(PyObject *exc, const char *fmt, ...) {
 	va_end(ap);
 
 	plc_elog(DEBUG1, "Python caught an exception: %s", buf);
-	raise_execution_error("Error receiving data from frontend: %s", buf);
+	raise_execution_error("Error: %s", buf);
 	PyErr_SetString(exc, buf);
 }
 
