@@ -346,47 +346,65 @@ static void plcontainer_process_sql(plcMsgSQL *msg, plcConn *conn, plcProcInfo *
 	oldowner = CurrentResourceOwner;
 
 	res = handle_sql_message(msg, conn, proc);
-	if (res != NULL) {
-		retval = plcontainer_channel_send(conn, res);
-		if (retval < 0) {
-			/*
-			 * SPI_execute may exit container(e.g. plpy.error)
-			 * in this case, we need to output the plpy.error message
-			 * to end user instead of 'Error sending data to the client'
-			 */
-			if (res->msgtype == MT_EXCEPTION) {
-				plcMsgError* errorResp = (plcMsgError *) res;
-				if (errorResp->message != NULL) {
-					plc_elog(ERROR, "Handle spi message failed due to %s",
-							errorResp->message);
-				} else {
-					plc_elog(ERROR, "Handle spi message failed.");
-				}
-			} else {
-			plc_elog(ERROR, "Error sending data to the client. "
-				"Maybe retry later.");
-			}
-			return;
-		}
-		switch (res->msgtype) {
-			case MT_RESULT:
-				free_result((plcMsgResult *) res, true);
-				break;
-			case MT_CALLREQ:
-				free_callreq((plcMsgCallreq *) res, true, true);
-				break;
-			case MT_RAW:
-				free_rawmsg((plcMsgRaw *) res);
-				break;
-			case MT_EXCEPTION:
-				free_error((plcMsgError *) res);
-				break;
-			default:
-				ereport(ERROR,
-				        (errcode(ERRCODE_RAISE_EXCEPTION),
-					        errmsg("Returning message type '%c' from SPI call is not implemented", res->msgtype)));
-		}
+	if (res == NULL) {
+		ErrorData *edata;
+		edata = CopyErrorData();
+		FlushErrorState();
+
+		plcMsgError *err;
+
+		/* an exception send to container side, which will be freed after send.
+		 * TODO: we treat them as general SPI error now.
+		 */
+		err = palloc(sizeof(plcMsgError));
+		err->msgtype = MT_EXCEPTION;
+		err->message = (char *) palloc(strlen(edata->message) + 1);
+		memcpy(err->message, edata->message, strlen(edata->message));
+		err->message[strlen(edata->message)] = '\0';
+		err->stacktrace = NULL;
+
+		res = (plcMessage *) err;
 	}
+
+	retval = plcontainer_channel_send(conn, res);
+	if (retval < 0) {
+		/*
+		 * SPI_execute may exit container(e.g. plpy.error)
+		 * in this case, we need to output the plpy.error message
+		 * to end user instead of 'Error sending data to the client'
+		 */
+		if (res->msgtype == MT_EXCEPTION) {
+			plcMsgError* errorResp = (plcMsgError *) res;
+			if (errorResp->message != NULL) {
+				plc_elog(ERROR, "Handle spi message failed due to %s",
+						errorResp->message);
+			} else {
+				plc_elog(ERROR, "Handle spi message failed.");
+			}
+		} else {
+			plc_elog(ERROR,
+					"Error sending data to the client. " "Maybe retry later.");
+		}
+		return;
+	}
+	switch (res->msgtype) {
+	case MT_RESULT:
+		free_result((plcMsgResult *) res, true);
+		break;
+	case MT_CALLREQ:
+		free_callreq((plcMsgCallreq *) res, true, true);
+		break;
+	case MT_RAW:
+		free_rawmsg((plcMsgRaw *) res);
+		break;
+	case MT_EXCEPTION:
+		free_error((plcMsgError *) res);
+		break;
+	default:
+		ereport(ERROR,
+				(errcode(ERRCODE_RAISE_EXCEPTION), errmsg("Returning message type '%c' from SPI call is not implemented", res->msgtype)));
+	}
+
 
 	MemoryContextSwitchTo(oldcontext);
 	CurrentResourceOwner = oldowner;
