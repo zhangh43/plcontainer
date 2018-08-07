@@ -1,4 +1,4 @@
-## PL/Container
+## sPL/Container
 
 This is an implementation of trusted language execution engine capable of
 bringing up Docker containers to isolate executors from the host OS, i.e.
