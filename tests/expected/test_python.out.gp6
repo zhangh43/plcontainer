@@ -588,9 +588,9 @@ select pylargeint8in(array_agg(id)) from generate_series(1,100000) id;
 (1 row)
 
 select avg(x) from (select unnest(pylargeint8out(100000)) as x) as q;
-   avg   
----------
- 49999.5
+        avg         
+--------------------
+ 49999.500000000000
 (1 row)
 
 select pylargetextin(string_agg(x,',')) from (select x::varchar from generate_series(1,100000) x) as q;
