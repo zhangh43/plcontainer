@@ -238,6 +238,25 @@ resources:
     secret_access_key: {{bucket-secret-access-key}}
     regexp: release-candidate/gpdb5/plcontainer/plcontainer-r-image(.*).tar.gz
 
+- name: plcontainer_docker_image_centos_python_release
+  type: s3
+  source:
+    access_key_id: {{bucket-access-key-id}}
+    bucket: {{pl-bucket-name}}
+    region_name: {{aws-region}}
+    secret_access_key: {{bucket-secret-access-key}}
+    regexp: release/gpdb5/plcontainer/plcontainer-python-image(.*).tar.gz
+
+- name: plcontainer_docker_image_centos_r_release
+  type: s3
+  source:
+    access_key_id: {{bucket-access-key-id}}
+    bucket: {{pl-bucket-name}}
+    region_name: {{aws-region}}
+    secret_access_key: {{bucket-secret-access-key}}
+    regexp: release/gpdb5/plcontainer/plcontainer-r-image(.*).tar.gz
+
+
 - name: bin_gpdb_centos7
   type: s3
   source:
@@ -274,7 +293,23 @@ resources:
     secret_access_key: {{bucket-secret-access-key}}
     regexp: release-candidate/gpdb5/plcontainer/plcontainer-(.*)-rhel6-x86_64.gppkg
 
+- name: plcontainer_gpdb_centos7_build_release
+  type: s3
+  source:
+    bucket: {{pl-bucket-name}}
+    region_name: {{aws-region}}
+    access_key_id: {{bucket-access-key-id}}
+    secret_access_key: {{bucket-secret-access-key}}
+    regexp: release/gpdb5/plcontainer/plcontainer-(.*)-rhel7-x86_64.gppkg
 
+- name: plcontainer_gpdb_centos6_build_release
+  type: s3
+  source:
+    bucket: {{pl-bucket-name}}
+    region_name: {{aws-region}}
+    access_key_id: {{bucket-access-key-id}}
+    secret_access_key: {{bucket-secret-access-key}}
+    regexp: release/gpdb5/plcontainer/plcontainer-(.*)-rhel6-x86_64.gppkg
 
 ##################################### JOBS #####################################
 ################################################################################
@@ -333,24 +368,19 @@ jobs:
   plan:
   - aggregate:
     - get: plcontainer_src
-      passed: [plcontainer_build_centos6]
     - get: gpdb_src
     - get: gpdb_binary
       resource: bin_gpdb_centos6
       trigger: true
     - get: ccp_src
-      passed: [plcontainer_build_python_image, plcontainer_build_r_image]
     - get: centos-gpdb-dev-6
     - get: plcontainer_pyclient_docker_image
-      resource: plcontainer_docker_image_centos_python
-      passed: [plcontainer_build_python_image]
+      resource: plcontainer_docker_image_centos_python_release
       trigger: true
     - get: plcontainer_rclient_docker_image
-      resource: plcontainer_docker_image_centos_r
-      passed: [plcontainer_build_r_image]
+      resource: plcontainer_docker_image_centos_r_release
       trigger: true
-    - get: plcontainer_gpdb_centos6_build
-      passed: [plcontainer_build_centos6]
+    - get: plcontainer_gpdb_centos6_build_release
       trigger: true
   - put: terraform
     params:
@@ -375,7 +405,7 @@ jobs:
       platform: centos6
     image: centos-gpdb-dev-6
     input_mapping:
-      plcontainer_gpdb_build: plcontainer_gpdb_centos6_build
+      plcontainer_gpdb_build: plcontainer_gpdb_centos6_build_release
     on_success:
       <<: *ccp_destroy
   ensure:
@@ -386,24 +416,19 @@ jobs:
   plan:
   - aggregate:
     - get: plcontainer_src
-      passed: [plcontainer_build_centos7]
     - get: gpdb_src
     - get: gpdb_binary
       resource: bin_gpdb_centos7
       trigger: true
     - get: ccp_src
-      passed: [plcontainer_build_python_image, plcontainer_build_r_image]
     - get: centos-gpdb-dev-7
     - get: plcontainer_pyclient_docker_image
-      resource: plcontainer_docker_image_centos_python
-      passed: [plcontainer_build_python_image]
+      resource: plcontainer_docker_image_centos_python_release
       trigger: true
     - get: plcontainer_rclient_docker_image
-      resource: plcontainer_docker_image_centos_r
-      passed: [plcontainer_build_r_image]
+      resource: plcontainer_docker_image_centos_r_release
       trigger: true
-    - get: plcontainer_gpdb_centos7_build
-      passed: [plcontainer_build_centos7]
+    - get: plcontainer_gpdb_centos7_build_release
       trigger: true
   - put: terraform
     params:
@@ -428,7 +453,7 @@ jobs:
       platform: centos7
     image: centos-gpdb-dev-7
     input_mapping:
-      plcontainer_gpdb_build: plcontainer_gpdb_centos7_build
+      plcontainer_gpdb_build: plcontainer_gpdb_centos7_build_release
     on_success:
       <<: *ccp_destroy
   ensure:
