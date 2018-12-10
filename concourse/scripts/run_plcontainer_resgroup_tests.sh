@@ -39,6 +39,11 @@ pushd gpdb_src
             --disable-gpcloud --disable-gpfdist --disable-orca \
             --disable-pxf
 popd
+
+mkdir /usr/local/greenplum-db-devel
+tar -zxvf gpdb_binary/bin_gpdb.tar.gz -C /usr/local/greenplum-db-devel
+source /usr/local/greenplum-db-devel/greenplum_path.sh
+
 pushd gpdb_src/src/test/isolation2
 make
 scp -r pg_isolation2_regress mdw:/usr/local/greenplum-db-devel/lib/postgresql/pgxs/src/test/regress/
