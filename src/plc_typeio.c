@@ -262,12 +262,12 @@ fill_type_info_inner(FunctionCallInfo fcinfo, Oid typeOid, plcTypeInfo *type, bo
 
 			// Fill all the subtypes
 			for (i = 0; i < desc->natts; i++) {
-				type->subTypes[i].attisdropped = desc->attrs[i]->attisdropped;
+				type->subTypes[i].attisdropped = desc->attrs[i].attisdropped;
 				if (!type->subTypes[i].attisdropped) {
 					/* We support the case with array of UDTs, each of which contains another array */
-					fill_type_info_inner(fcinfo, desc->attrs[i]->atttypid, &type->subTypes[i], false, true);
+					fill_type_info_inner(fcinfo, desc->attrs[i].atttypid, &type->subTypes[i], false, true);
 				}
-				type->subTypes[i].typeName = plc_top_strdup(NameStr(desc->attrs[i]->attname));
+				type->subTypes[i].typeName = plc_top_strdup(NameStr(desc->attrs[i].attname));
 			}
 
 			ReleaseTupleDesc(desc);

@@ -10,6 +10,7 @@
 #include <libxml/parser.h>
 #include <unistd.h>
 #include <sys/stat.h>
+#include <json-c/json.h>
 
 #include "postgres.h"
 #ifndef PLC_PG
@@ -21,11 +22,10 @@
 
   #define InvalidDbid 0
 #endif
-#include "utils/builtins.h"
 #include "utils/guc.h"
 #include "libpq/libpq-be.h"
 #include "utils/acl.h"
-
+#include "utils/varlena.h"
 #ifdef PLC_PG
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-parameter"
@@ -735,7 +735,7 @@ containers_summary(pg_attribute_unused() PG_FUNCTION_ARGS) {
 		 * prepare attribute metadata for next calls that generate the tuple
 		 */
 
-		tupdesc = CreateTemplateTupleDesc(5, false);
+		tupdesc = CreateTemplateTupleDesc(5);
 		TupleDescInitEntry(tupdesc, (AttrNumber) 1, "SEGMENT_ID",
 		                   TEXTOID, -1, 0);
 		TupleDescInitEntry(tupdesc, (AttrNumber) 2, "CONTAINER_ID",

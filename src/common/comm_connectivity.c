@@ -45,7 +45,7 @@ static ssize_t plcSocketRecv(plcConn *conn, void *ptr, size_t len) {
 	/* Better use clock_gettime() however it needs librt. */
 	retval = gettimeofday(&start_ts, NULL);
 	if (retval < 0) {
-		plc_elog(ERROR, "Failed to get time for hang detection: %s", strerror(errno));
+		plc_elog(ERROR, "Failed to get time for hang detection.");
 		return retval;
 	}
 
@@ -59,7 +59,7 @@ static ssize_t plcSocketRecv(plcConn *conn, void *ptr, size_t len) {
 		/* error out if timeout. */
 		retval = gettimeofday(&end_ts, NULL);
 		if (retval < 0) {
-			plc_elog(ERROR, "Failed to get time for hang detection: %s", strerror(errno));
+			plc_elog(ERROR, "Failed to get time for hang detection.");
 			return retval;
 		}
 
@@ -73,13 +73,12 @@ static ssize_t plcSocketRecv(plcConn *conn, void *ptr, size_t len) {
 	/* If receive command is terminated by SIGINT/SIGTERM, etc. */
 	if (sz == -1 && errno == EINTR) {
 		plc_elog(ERROR, "Query and PL/Container connections are terminated "
-		"by user request: %s", strerror(errno));
+		"by user request.");
 	}
 
 	/* Log info if needed. */
 	if (sz < 0) {
-		plc_elog(LOG, "Query and PL/Container connections are terminated "
-		"due to: %s", strerror(errno));
+		plc_elog(LOG, "Query and PL/Container connections are terminated.");
 	} else if (sz == 0) {
 		plc_elog(LOG, "The peer has shut down the connection.");
 	}
@@ -96,7 +95,7 @@ static ssize_t plcSocketSend(plcConn *conn, const void *ptr, size_t len) {
 	/* If receive command is terminated by SIGINT */
 	if (sz < 0 && errno == EINTR) {
 		plc_elog(ERROR, "Query and PL/Container connections are terminated by "
-		"user request: %s", strerror(errno));
+		"user request.");
 	}
 
 	return sz;
@@ -129,8 +128,7 @@ static int plcBufferMaybeFlush(plcConn *conn, bool isForse) {
 			                     buf->pEnd - buf->pStart);
 			if (sent <= 0) {
 				plc_elog(LOG, "plcBufferMaybeFlush: Socket write failed, send "
-					"return code is %d, error message is '%s'",
-					sent, strerror(errno));
+					"return code is %d", sent);
 				return -1;
 			}
 			buf->pStart += sent;
@@ -396,7 +394,7 @@ plcConn *plcConnect_inet(int port) {
 
 	int sock = socket(AF_INET, SOCK_STREAM, 0);
 	if (sock < 0) {
-		plc_elog(ERROR, "PLContainer: Cannot create socket: %s", strerror(errno));
+		plc_elog(ERROR, "PLContainer: Cannot create socket.");
 		return result;
 	}
 
@@ -416,8 +414,7 @@ plcConn *plcConnect_inet(int port) {
 	            sizeof(raddr)) < 0) {
 		char ipAddr[INET_ADDRSTRLEN];
 		inet_ntop(AF_INET, &(raddr.sin_addr), ipAddr, INET_ADDRSTRLEN);
-		plc_elog(DEBUG1, "PLContainer: Failed to connect to %s: %s", ipAddr,
-			    strerror(errno));
+		plc_elog(DEBUG1, "PLContainer: Failed to connect to %s", ipAddr);
 		return result;
 	}
 
@@ -452,8 +449,7 @@ plcConn *plcConnect_ipc(char *uds_fn) {
 
 	sock = socket(AF_UNIX, SOCK_STREAM, 0);
 	if (sock < 0) {
-		plc_elog(ERROR, "PLContainer: Cannot create unix domain socket: %s",
-			    strerror(errno));
+		plc_elog(ERROR, "PLContainer: Cannot create unix domain socket");
 		return NULL;
 	}
 
@@ -464,8 +460,8 @@ plcConn *plcConnect_ipc(char *uds_fn) {
 
 	if (connect(sock, (const struct sockaddr *) &raddr,
 	            sizeof(raddr)) < 0) {
-		plc_elog(DEBUG1, "PLContainer: Failed to connect to %s: %s",
-			    uds_fn, strerror(errno));
+		plc_elog(DEBUG1, "PLContainer: Failed to connect to %s",
+			    uds_fn);
 		return NULL;
 	}
 

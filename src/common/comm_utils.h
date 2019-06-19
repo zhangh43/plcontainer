@@ -137,6 +137,7 @@ int sanity_check_client(void);
 	} while(0)
 
 #define plc_elog(lvl, fmt, ...) elog(lvl, "plcontainer: " fmt, ##__VA_ARGS__);
+//#define plc_elog(lvl, fmt, ...) ;
 #define pmalloc palloc
 
 /* pfree & pstrdup are already defined by postgres */

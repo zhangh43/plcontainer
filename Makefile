@@ -86,7 +86,7 @@ endif
 
 PLCONTAINERDIR = $(DESTDIR)$(datadir)/plcontainer
 
-override CFLAGS += -Werror -Wextra -Wall
+override CFLAGS +=  -Wextra -Wall
 
 ifeq ($(ENABLE_COVERAGE),yes)
   override CFLAGS += -coverage

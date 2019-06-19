@@ -10,7 +10,6 @@
 #define PLC_CONFIGURATION_H
 
 #include "fmgr.h"
-#include <json-c/json.h>
 #include "plcontainer.h"
 
 #define PLC_PROPERTIES_FILE "plcontainer_configuration.xml"

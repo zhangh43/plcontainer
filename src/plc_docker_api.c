@@ -618,26 +618,31 @@ static int docker_inspect_string(char *buf, char **element, plcInspectionMode ty
 	} else if (type == PLC_INSPECT_STATUS) {
 		struct json_object *StateObj = NULL;
 
+#ifdef DOCKER_API_LOW
+		struct json_object *RunningObj = NULL;
+		const char *RunningStr;
+#else
+		struct json_object *StatusObj = NULL;
+		const char *StatusStr;
+#endif
 		if (!json_object_object_get_ex(response, "State", &StateObj)) {
 			backend_log(WARNING, "failed to get json \"State\" field.");
 			return -1;
 		}
 #ifdef DOCKER_API_LOW
-		struct json_object *RunningObj = NULL;
 		if (!json_object_object_get_ex(StateObj, "Running", &RunningObj)) {
 			backend_log(WARNING, "failed to get json \"Running\" field.");
 			return -1;
 		}
-		const char *RunningStr = json_object_get_string(RunningObj);
+		RunningStr = json_object_get_string(RunningObj);
 		*element = pstrdup(RunningStr);
 		return 0;
 #else
-		struct json_object *StatusObj = NULL;
 		if (!json_object_object_get_ex(StateObj, "Status", &StatusObj)) {
 			backend_log(WARNING, "failed to get json \"Status\" field.");
 			return -1;
 		}
-		const char *StatusStr = json_object_get_string(StatusObj);
+		StatusStr = json_object_get_string(StatusObj);
 		*element = pstrdup(StatusStr);
 		return 0;
 #endif

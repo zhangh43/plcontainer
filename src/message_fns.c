@@ -298,12 +298,12 @@ static void fill_callreq_arguments(FunctionCallInfo fcinfo, plcProcInfo *pinfo, 
 		req->args[i].name = pinfo->argnames[i];
 		copy_type_info(&req->args[i].type, &pinfo->argtypes[i]);
 
-		if (fcinfo->argnull[i]) {
+		if (fcinfo->args[i].isnull) {
 			req->args[i].data.isnull = 1;
 			req->args[i].data.value = NULL;
 		} else {
 			req->args[i].data.isnull = 0;
-			req->args[i].data.value = pinfo->argtypes[i].outfunc(fcinfo->arg[i], &pinfo->argtypes[i]);
+			req->args[i].data.value = pinfo->argtypes[i].outfunc(fcinfo->args[i].value, &pinfo->argtypes[i]);
 		}
 	}
 }

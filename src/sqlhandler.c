@@ -65,7 +65,7 @@ static plcMsgResult *create_sql_result(bool isSelect) {
 	result->exception_callback = NULL;
 	resTypes = palloc(result->cols * sizeof(plcTypeInfo));
 	for (j = 0; j < result->cols; j++) {
-		fill_type_info(NULL, SPI_tuptable->tupdesc->attrs[j]->atttypid, &resTypes[j]);
+		fill_type_info(NULL, SPI_tuptable->tupdesc->attrs[j].atttypid, &resTypes[j]);
 		copy_type_info(&result->types[j], &resTypes[j]);
 		result->names[j] = SPI_fname(SPI_tuptable->tupdesc, j + 1);
 	}
